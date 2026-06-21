@@ -10,7 +10,8 @@ add_executable(
   ExtendedKalmanFilter.cpp
   UnscentedKalmanFilterBase.cpp
   UnscentedKalmanFilter.cpp
-  SquareRootUnscentedKalmanFilter.cpp)
+  SquareRootUnscentedKalmanFilter.cpp
+  SquareRootExtendedKalmanFilter.cpp)
 
 target_link_libraries(kalman_test PRIVATE Kalman::Kalman)
 
