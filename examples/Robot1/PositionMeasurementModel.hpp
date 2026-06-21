@@ -52,10 +52,10 @@ class PositionMeasurementModel
           State<T>, PositionMeasurement<T>, CovarianceBase> {
 public:
   //! State type shortcut definition
-  typedef KalmanExamples::Robot1::State<T> S;
+  using S = KalmanExamples::Robot1::State<T>;
 
   //! Measurement type shortcut definition
-  typedef KalmanExamples::Robot1::PositionMeasurement<T> M;
+  using M = KalmanExamples::Robot1::PositionMeasurement<T>;
 
   /**
    * @brief Constructor
@@ -73,7 +73,7 @@ public:
 
     // Setup noise jacobian. As this one is static, we can define it once
     // and do not need to update it dynamically
-    this->V.setIdentity();
+    this->_V.setIdentity();
   }
 
   /**
@@ -130,9 +130,9 @@ protected:
    * @param x The current system state around which to linearize
    * @param u The current system control input
    */
-  void updateJacobians(const S &x) {
+  void update_jacobians(const S &x) {
     // H = dh/dx (Jacobian of measurement function w.r.t. the state)
-    this->H.setZero();
+    this->_H.setZero();
 
     // Robot position as (x,y)-vector
     // This uses the Eigen template method to get the first 2 elements of the
@@ -150,14 +150,14 @@ protected:
     T d2 = std::sqrt(delta2.dot(delta2));
 
     // partial derivative of meas.d1() w.r.t. x.x()
-    this->H(M::D1, S::X) = delta1[0] / d1;
+    this->_H(M::D1, S::X) = delta1[0] / d1;
     // partial derivative of meas.d1() w.r.t. x.y()
-    this->H(M::D1, S::Y) = delta1[1] / d1;
+    this->_H(M::D1, S::Y) = delta1[1] / d1;
 
     // partial derivative of meas.d1() w.r.t. x.x()
-    this->H(M::D2, S::X) = delta2[0] / d2;
+    this->_H(M::D2, S::X) = delta2[0] / d2;
     // partial derivative of meas.d1() w.r.t. x.y()
-    this->H(M::D2, S::Y) = delta2[1] / d2;
+    this->_H(M::D2, S::Y) = delta2[1] / d2;
   }
 };
 

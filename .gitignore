@@ -9,3 +9,7 @@ CMakeLists.txt.user
 *build
 build*/
 documentation
+
+# Python
+__pycache__/
+*.pyc

@@ -57,6 +57,6 @@ jobs:
 
       - name: Check formatting
         run: |
-          find include test examples \
+          find include test examples benchmark \
             -type f \( -name '*.hpp' -o -name '*.cpp' -o -name '*.h' \) \
             -print0 | xargs -0 clang-format-18 --dry-run --Werror

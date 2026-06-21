@@ -1,41 +1,64 @@
-# Kalman Filter Library
+# Kalman
 
 [![CI](https://github.com/pbosetti/kalman/actions/workflows/ci.yml/badge.svg)](https://github.com/pbosetti/kalman/actions/workflows/ci.yml)
+[![Benchmark](https://github.com/pbosetti/kalman/actions/workflows/benchmark.yml/badge.svg)](https://github.com/pbosetti/kalman/actions/workflows/benchmark.yml)
+[![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.txt)
 
-This is a header-only C++11 library implementing common variants of the well-known [Kalman-Filter](https://en.wikipedia.org/wiki/Kalman_filter).
-Currently implementations of these filter variants are included:
+**A fast, header-only C++20 library for [Kalman filtering](https://en.wikipedia.org/wiki/Kalman_filter) — built on [Eigen](https://eigen.tuxfamily.org), with zero hand-rolled linear algebra and zero install friction.**
 
-* Extended Kalman Filter (EKF)
-* Square Root Extended Kalman Filter (SR-EKF)
-* Unscented Kalman Filter (UKF)
-* Square Root Unscented Kalman Filter (SR-UKF)
+Define a state vector, a system model, and a measurement model, and you have a
+working state estimator in a few dozen lines. The library does the heavy lifting
+(sigma points, Jacobian propagation, square-root covariance updates) behind a
+small, strongly-typed interface.
 
-> This repository is a modernized review of the original
-> [mherb/kalman](https://github.com/mherb/kalman) library.
+> ### About this repository
+> This is a **thorough, modernized review of the excellent original
+> [mherb/kalman](https://github.com/mherb/kalman)** library. The filtering
+> algorithms are faithfully preserved; everything *around* them has been
+> reworked: a C++20 codebase, a dependency-free test and benchmark harness,
+> Eigen pulled in automatically, first-class `FetchContent` support,
+> cross-platform CI, and documentation aimed at getting you productive quickly.
+> See [What's different](#whats-different-in-this-review) for the full list.
 
-## Dependencies
+## Filter variants
 
-This library makes heavy use of the excellent [Eigen3 library](http://eigen.tuxfamily.org) for linear algebra operations and is thus a required dependency.
-The build system locates Eigen automatically: it uses a system installation if
-one is available, and otherwise downloads a pinned release (3.4.0) via CMake's
-`FetchContent`. No manual setup is required.
+| Variant | Class | Best for |
+| :------ | :---- | :------- |
+| Extended Kalman Filter | `Kalman::ExtendedKalmanFilter` | Mildly non-linear systems where Jacobians are easy to derive |
+| Square-Root EKF | `Kalman::SquareRootExtendedKalmanFilter` | EKF problems needing better numerical conditioning |
+| Unscented Kalman Filter | `Kalman::UnscentedKalmanFilter` | Strongly non-linear systems; no Jacobians required |
+| Square-Root UKF | `Kalman::SquareRootUnscentedKalmanFilter` | The recommended UKF: same accuracy, more numerically robust |
 
-## Building and running the tests
+## What's different in this review
 
-The project is built with CMake (>= 3.16). The unit tests use a small, bundled
-test harness and require no external testing framework.
+Compared to the original [mherb/kalman](https://github.com/mherb/kalman):
 
-```sh
-cmake -S . -B build
-cmake --build build
-ctest --test-dir build --output-on-failure
-```
+- **C++20 throughout** — template parameters are constrained with
+  [concepts](include/kalman/Concepts.hpp) (clear errors instead of deep template
+  spew), plus `using` aliases, `[[nodiscard]]`, and `std::numbers`.
+- **No external test framework** — GoogleTest is gone, replaced by a tiny
+  bundled, header-only harness ([`test/lib/Test.hpp`](test/lib/Test.hpp)).
+- **Eigen handled for you** — found on the system if present, otherwise fetched
+  automatically (pinned release) via CMake `FetchContent`.
+- **Drop-in consumption** — a single `Kalman::Kalman` CMake target that works
+  identically via `FetchContent` and via `find_package` after install.
+- **Cross-platform CI** — Linux (GCC/Clang), macOS (Clang) and Windows (MSVC),
+  in Debug and Release.
+- **A benchmark suite** that runs in CI and keeps the [results table](#performance)
+  in this README up to date.
+- **Consistent style** — LLVM `clang-format` and a documented naming convention.
 
-## Using the library
+## Requirements
 
-Being header-only, the library can be used by simply adding the `include`
-directory to your include path and linking against Eigen. The recommended way
-to consume it from another CMake project is `FetchContent`:
+- A C++20 compiler (tested with GCC 13, Clang 18 and MSVC 2022)
+- CMake ≥ 3.16
+- [Eigen 3](https://eigen.tuxfamily.org) ≥ 3.3 — used if installed, otherwise
+  fetched automatically (Eigen 3.4.0). No manual setup required.
+
+## Quick start
+
+Pull the library straight into your CMake project with `FetchContent`:
 
 ```cmake
 include(FetchContent)
@@ -48,84 +71,150 @@ FetchContent_MakeAvailable(kalman)
 target_link_libraries(my_target PRIVATE Kalman::Kalman)
 ```
 
-Alternatively, after installing the library (`cmake --install build`), it can be
-located with `find_package`:
+The `Kalman::Kalman` target propagates the include directories and the Eigen
+dependency automatically. Alternatively, after `cmake --install`, locate it with
+`find_package(Kalman REQUIRED)` — the same target name applies.
 
-```cmake
-find_package(Kalman REQUIRED)
-target_link_libraries(my_target PRIVATE Kalman::Kalman)
+## A 60-second example
+
+A complete 1-D constant-velocity tracker (see
+[`examples/Template/main.cpp`](examples/Template/main.cpp) for the fully
+commented version):
+
+```cpp
+#include <kalman/ExtendedKalmanFilter.hpp>
+
+using T = double;
+using State = Kalman::Vector<T, 2>; // [position, velocity]
+
+// Constant-velocity model; F is constant, so set it once.
+struct SystemModel : Kalman::LinearizedSystemModel<State> {
+  T dt = 1;
+  SystemModel() { this->_F << 1, dt, 0, 1; }
+  State f(const State &x, const Control &) const override {
+    State n; n << x(0) + dt * x(1), x(1); return n;
+  }
+};
+
+using Measurement = Kalman::Vector<T, 1>; // measured position
+struct MeasurementModel
+    : Kalman::LinearizedMeasurementModel<State, Measurement> {
+  MeasurementModel() { this->_H << 1, 0; }
+  Measurement h(const State &x) const override {
+    Measurement z; z << x(0); return z;
+  }
+};
+
+int main() {
+  SystemModel sys;
+  MeasurementModel mm;
+  Kalman::ExtendedKalmanFilter<State> ekf;
+
+  State x0; x0 << 0, 0;
+  ekf.init(x0);
+
+  Measurement z; z << 2.1;        // a noisy position reading
+  ekf.predict(sys);               // time update
+  const State &x = ekf.update(mm, z); // measurement update
+}
 ```
 
-In both cases the `Kalman::Kalman` target propagates the include directories and
-the Eigen dependency automatically.
+## Building and running the tests
 
-## Usage
-In order to use the library to do state estimation, a number of things have to be done:
+```sh
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
 
-1. Define a state-vector type
-2. (Optional) Define a control-vector type
-3. Define a system model
-4. Define one (or more) measurement models with corresponding measurement vector types
+Useful options (all default ON when Kalman is the top-level project and OFF when
+it is consumed as a subproject):
 
-### Example
-A fairly worked out example on how to use the library is given in `examples/Robot1` with detailed commentary.
+| Option | Description |
+| :----- | :---------- |
+| `KALMAN_BUILD_TESTS` | Build the unit tests |
+| `KALMAN_BUILD_EXAMPLES` | Build the example programs |
+| `KALMAN_BUILD_BENCHMARKS` | Build the benchmark suite |
+| `KALMAN_INSTALL` | Generate install/export rules |
+| `KALMAN_USE_SYSTEM_EIGEN` | Prefer a system Eigen over fetching one |
 
-### State Vector
-The state vector defines the state variables of your system that should be estimated.
-You can use the readily available `Kalman::Vector` template type as your vector or derive your own specialized state vector from that.
+## Adapting it to your own problem
 
-### Control Vector
-In case your system has some control input, a control vector has to be defined analogously to the state vector.
+Estimation with this library always comes down to four pieces:
 
-### System Model
-The system model defines how the system state evolves over time, i.e. from one time-step to the next given some control input.
-The transition function is in general non-linear. Any system model must derive from the base `SystemModel` class template.
-In case a linearized filter such as the Extended Kalman Filter should be used, then the system model must be given as linearized model by deriving from `LinearizedSystemModel` and defining the corresponding jacobians.
+1. **State vector** — what you want to estimate. Use `Kalman::Vector<T, N>` or
+   derive your own named type with the `KALMAN_VECTOR` helper.
+2. **System model** — how the state evolves. Derive from `Kalman::SystemModel`
+   (non-linear filters) or `Kalman::LinearizedSystemModel` (EKF/SR-EKF, where you
+   also provide the Jacobian) and implement `f()`.
+3. **Measurement vector** — what your sensors report.
+4. **Measurement model** — how the state maps to a measurement. Derive from
+   `Kalman::MeasurementModel` / `Kalman::LinearizedMeasurementModel` and
+   implement `h()`.
 
-Note that linearized models can of course also be used with fully non-linear filters such as the Unscented Kalman Filter.
+Two worked examples are included:
 
-### Measurement Vector
-The measurement vector represents the measurement taken by some sensors and has to be defined analogously to the state and control vectors.
+- [`examples/Template`](examples/Template/main.cpp) — the minimal starting point
+  to copy from.
+- [`examples/Robot1`](examples/Robot1) — a 3-DOF planar robot with a non-linear
+  motion model and two different sensors (range-to-landmarks and a compass),
+  compared across the EKF and UKF.
 
-### Measurement Model
-The measurement model defines how a measurement is related to the system state, i.e. it maps a system state to the expected sensor measurement.
-Measurement models must derive from the class template `MeasurementModel` or, in case of linearized models for EKFs, from `LinearizedMeasurementModel`.
+## Performance
 
-## FAQ
+One full *predict + measurement-update* cycle of the Robot1 model (3-D state,
+`float`), measured by the bundled benchmark suite. Reproduce locally with:
 
-__The filters are running very slowly, why is that and how can I make them faster?__
-By default, operations in Eigen include a lot of debug code, such as checking for valid matrix and vector bounds and so on.
-To speed things up, these checks can be disabled using the pre-processor define
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target kalman_benchmark
+./build/benchmark/kalman_benchmark --markdown
+```
 
-    -DEIGEN_NO_DEBUG
+<!-- BENCHMARK:START -->
+_Last updated: 2026-06-21 14:31 UTC. Indicative numbers from the CI runner; absolute values vary with hardware._
 
-which is also automatically set when using the general
+| Filter | Time / cycle | Throughput |
+| :----- | -----------: | ---------: |
+| EKF | 0.125 µs | 7.99M cycles/s |
+| SR_EKF | 1.360 µs | 0.74M cycles/s |
+| UKF | 0.254 µs | 3.94M cycles/s |
+| SR_UKF | 1.301 µs | 0.77M cycles/s |
+<!-- BENCHMARK:END -->
 
-    -DNDEBUG
+## Coding style and conventions
 
-flag. In addition to that the regular optimization flags including `-O2` will make things faster.
+Code is formatted with `clang-format` (LLVM base; see [`.clang-format`](.clang-format))
+and follows these naming conventions:
 
+- **Classes, namespaces and type aliases**: `PascalCase`
+- **Member functions**: `snake_case`
+- **Member variables**: leading underscore; canonical Kalman math casing is
+  preserved for single-symbol matrices/vectors (`_x`, `_P`, `_S`, `_F`, `_W`,
+  `_H`, `_V`) and `snake_case` otherwise (`_sigma_state_points`).
+
+The `Kalman::Cholesky` helper intentionally keeps Eigen's camelCase, as it
+extends `Eigen::LLT`.
+
+## Documentation
+
+The headers are documented with Doxygen. Generate the HTML docs with:
+
+```sh
+doxygen Doxyfile
+```
+
+## Acknowledgements
+
+This project is a modernized review of
+[**mherb/kalman**](https://github.com/mherb/kalman) by Markus Herb. All credit
+for the original design and the filter implementations goes to the upstream
+authors. The unscented variants are based on *The square-root unscented Kalman
+filter for state and parameter-estimation* by Rudolph van der Merwe and Eric A.
+Wan.
 
 ## License
 
-The MIT License (MIT)
+Released under the MIT License — see [LICENSE.txt](LICENSE.txt).
 
-Copyright (c) 2015 [mherb](https://github.com/mherb)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+Copyright (c) 2015 [mherb](https://github.com/mherb) and contributors.

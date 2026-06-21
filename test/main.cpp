@@ -24,4 +24,4 @@
 //! Entry point for the unit-test executable. All test cases register
 //! themselves automatically at static-initialization time, so the runner only
 //! needs to execute them and forward the aggregate result as the exit code.
-int main() { return ::Kalman::testing::runAll(); }
+int main() { return ::Kalman::Testing::runAll(); }

@@ -44,9 +44,9 @@ class SquareRootExtendedKalmanFilter : public KalmanFilterBase<StateType>,
                                        public SquareRootFilterBase<StateType> {
 public:
   //! Kalman Filter base type
-  typedef KalmanFilterBase<StateType> KalmanBase;
+  using KalmanBase = KalmanFilterBase<StateType>;
   //! SquareRoot Filter base type
-  typedef SquareRootFilterBase<StateType> SquareRootBase;
+  using SquareRootBase = SquareRootFilterBase<StateType>;
 
   //! Numeric Scalar Type inherited from base
   using typename KalmanBase::T;
@@ -70,9 +70,9 @@ protected:
 
 protected:
   //! State estimate
-  using KalmanBase::x;
+  using KalmanBase::_x;
   //! State covariance square root
-  using SquareRootBase::S;
+  using SquareRootBase::_S;
 
 public:
   /**
@@ -80,7 +80,7 @@ public:
    */
   SquareRootExtendedKalmanFilter() {
     // Setup covariance
-    S.setIdentity();
+    _S.setIdentity();
   }
 
   /**
@@ -109,17 +109,17 @@ public:
   template <class Control, template <class> class CovarianceBase>
   const State &predict(SystemModelType<Control, CovarianceBase> &s,
                        const Control &u) {
-    s.updateJacobians(x, u);
+    s.update_jacobians(_x, u);
 
     // predict state
-    x = s.f(x, u);
+    _x = s.f(_x, u);
 
     // predict covariance
-    computePredictedCovarianceSquareRoot<State>(s.F, S, s.W,
-                                                s.getCovarianceSquareRoot(), S);
+    compute_predicted_covariance_square_root<State>(
+        s._F, _S, s._W, s.get_covariance_square_root(), _S);
 
     // return state prediction
-    return this->getState();
+    return this->get_state();
   }
 
   /**
@@ -133,27 +133,27 @@ public:
   template <class Measurement, template <class> class CovarianceBase>
   const State &update(MeasurementModelType<Measurement, CovarianceBase> &m,
                       const Measurement &z) {
-    m.updateJacobians(x);
+    m.update_jacobians(_x);
 
     // COMPUTE KALMAN GAIN
     // compute innovation covariance
     CovarianceSquareRoot<Measurement> S_y;
-    computePredictedCovarianceSquareRoot<Measurement>(
-        m.H, S, m.V, m.getCovarianceSquareRoot(), S_y);
+    compute_predicted_covariance_square_root<Measurement>(
+        m._H, _S, m._V, m.get_covariance_square_root(), S_y);
 
     // compute kalman gain
     KalmanGain<Measurement> K;
-    computeKalmanGain<Measurement>(m.H, S_y, K);
+    compute_kalman_gain<Measurement>(m._H, S_y, K);
 
     // UPDATE STATE ESTIMATE AND COVARIANCE
     // Update state using computed kalman gain and innovation
-    x += K * (z - m.h(x));
+    _x += K * (z - m.h(_x));
 
     // Update covariance
-    updateStateCovariance<Measurement>(K, m.H);
+    update_state_covariance<Measurement>(K, m._H);
 
     // return updated state estimate
-    return this->getState();
+    return this->get_state();
   }
 
 protected:
@@ -221,12 +221,14 @@ protected:
    * @return True on success, false on failure due to numerical issue
    */
   template <class Type>
-  bool computePredictedCovarianceSquareRoot(
+  bool compute_predicted_covariance_square_root(
       const Jacobian<Type, State> &A, const CovarianceSquareRoot<State> &S,
       const Jacobian<Type, Type> &B, const CovarianceSquareRoot<Type> &R,
       CovarianceSquareRoot<Type> &S_pred) {
     // Compute QR decomposition of (transposed) augmented matrix
-    Matrix<T, State::RowsAtCompileTime + Type::RowsAtCompileTime,
+    Matrix<T,
+           static_cast<int>(State::RowsAtCompileTime) +
+               static_cast<int>(Type::RowsAtCompileTime),
            Type::RowsAtCompileTime>
         tmp;
     tmp.template topRows<State::RowsAtCompileTime>() =
@@ -272,12 +274,12 @@ protected:
    * @param [out] K The computed Kalman Gain
    */
   template <class Measurement>
-  bool computeKalmanGain(const Jacobian<Measurement, State> &H,
-                         const CovarianceSquareRoot<Measurement> &S_y,
-                         KalmanGain<Measurement> &K) {
+  bool compute_kalman_gain(const Jacobian<Measurement, State> &H,
+                           const CovarianceSquareRoot<Measurement> &S_y,
+                           KalmanGain<Measurement> &K) {
     // Solve using backsubstitution
     // AX=B with B = HSS^T and X = K^T and A = S_yS_y^T
-    K = S_y.solve(H * S.reconstructedMatrix()).transpose();
+    K = S_y.solve(H * _S.reconstructedMatrix()).transpose();
     return true;
   }
 
@@ -288,13 +290,13 @@ protected:
    * @param [in] H The jacobian of the measurement function w.r.t. the state
    */
   template <class Measurement>
-  bool updateStateCovariance(const KalmanGain<Measurement> &K,
-                             const Jacobian<Measurement, State> &H) {
+  bool update_state_covariance(const KalmanGain<Measurement> &K,
+                               const Jacobian<Measurement, State> &H) {
     // TODO: update covariance without using decomposition
     Matrix<T, State::RowsAtCompileTime, State::RowsAtCompileTime> P =
-        S.reconstructedMatrix();
-    S.compute((P - K * H * P).eval());
-    return (S.info() == Eigen::Success);
+        _S.reconstructedMatrix();
+    _S.compute((P - K * H * P).eval());
+    return (_S.info() == Eigen::Success);
   }
 };
 } // namespace Kalman

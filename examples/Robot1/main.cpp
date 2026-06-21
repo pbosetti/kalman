@@ -1,10 +1,3 @@
-
-// this MUST be first, otherwise there might be problems on windows
-// see:
-// https://stackoverflow.com/questions/6563810/m-pi-works-with-math-h-but-not-with-cmath-in-visual-studio/6563891#6563891
-#define _USE_MATH_DEFINES
-#include <cmath>
-
 #include "OrientationMeasurementModel.hpp"
 #include "PositionMeasurementModel.hpp"
 #include "SystemModel.hpp"
@@ -13,22 +6,24 @@
 #include <kalman/UnscentedKalmanFilter.hpp>
 
 #include <chrono>
+#include <cmath>
 #include <iostream>
+#include <numbers>
 #include <random>
 
 using namespace KalmanExamples;
 
-typedef float T;
+using T = float;
 
 // Some type shortcuts
-typedef Robot1::State<T> State;
-typedef Robot1::Control<T> Control;
-typedef Robot1::SystemModel<T> SystemModel;
+using State = Robot1::State<T>;
+using Control = Robot1::Control<T>;
+using SystemModel = Robot1::SystemModel<T>;
 
-typedef Robot1::PositionMeasurement<T> PositionMeasurement;
-typedef Robot1::OrientationMeasurement<T> OrientationMeasurement;
-typedef Robot1::PositionMeasurementModel<T> PositionModel;
-typedef Robot1::OrientationMeasurementModel<T> OrientationModel;
+using PositionMeasurement = Robot1::PositionMeasurement<T>;
+using OrientationMeasurement = Robot1::OrientationMeasurement<T>;
+using PositionModel = Robot1::PositionMeasurementModel<T>;
+using OrientationModel = Robot1::OrientationMeasurementModel<T>;
 
 int main(int argc, char **argv) {
   // Simulated (true) system state
@@ -77,8 +72,9 @@ int main(int argc, char **argv) {
   const size_t N = 100;
   for (size_t i = 1; i <= N; i++) {
     // Generate some control input
-    u.v() = 1. + std::sin(T(2) * T(M_PI) / T(N));
-    u.dtheta() = std::sin(T(2) * T(M_PI) / T(N)) * (1 - 2 * (i > 50));
+    u.v() = 1. + std::sin(T(2) * std::numbers::pi_v<T> / T(N));
+    u.dtheta() =
+        std::sin(T(2) * std::numbers::pi_v<T> / T(N)) * (1 - 2 * (i > 50));
 
     // Simulate system
     x = sys.f(x, u);

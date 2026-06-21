@@ -22,8 +22,7 @@
 #ifndef KALMAN_SYSTEMMODEL_HPP_
 #define KALMAN_SYSTEMMODEL_HPP_
 
-#include <type_traits>
-
+#include "Concepts.hpp"
 #include "Matrix.hpp"
 #include "StandardBase.hpp"
 
@@ -38,28 +37,17 @@ namespace Kalman {
  * @param CovarianceBase The class template used for covariance storage (must be
  * either StandardBase or SquareRootBase)
  */
-template <class StateType,
-          class ControlType = Vector<typename StateType::Scalar, 0>,
+template <StateVector StateType,
+          ControlVector ControlType = Vector<typename StateType::Scalar, 0>,
           template <class> class CovarianceBase = StandardBase>
-class SystemModel : public CovarianceBase<StateType> {
-  static_assert(
-      /*StateType::RowsAtCompileTime == Dynamic ||*/ StateType::
-              RowsAtCompileTime > 0,
-      "State vector must contain at least 1 element" /* or be dynamic */);
-  static_assert(
-      /*ControlType::RowsAtCompileTime == Dynamic ||*/ ControlType::
-              RowsAtCompileTime >= 0,
-      "Control vector must contain at least 0 elements" /* or be dynamic */);
-  static_assert(std::is_same<typename StateType::Scalar,
-                             typename ControlType::Scalar>::value,
-                "State and Control scalar types must be identical");
-
+requires SameScalar<StateType, ControlType> class SystemModel
+    : public CovarianceBase<StateType> {
 public:
   //! System state type
-  typedef StateType State;
+  using State = StateType;
 
   //! System control input type
-  typedef ControlType Control;
+  using Control = ControlType;
 
 public:
   /**
@@ -71,8 +59,8 @@ public:
   virtual State f(const State &x, const Control &u) const = 0;
 
 protected:
-  SystemModel() {}
-  virtual ~SystemModel() {}
+  SystemModel() = default;
+  virtual ~SystemModel() = default;
 };
 } // namespace Kalman
 

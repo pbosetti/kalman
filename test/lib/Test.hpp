@@ -49,7 +49,7 @@
 #include <vector>
 
 namespace Kalman {
-namespace testing {
+namespace Testing {
 
 //! Exception thrown by a failing fatal assertion in order to abort the
 //! currently running test case. It is caught by the test runner.
@@ -198,7 +198,7 @@ inline int runAll() {
   return failures.empty() ? 0 : 1;
 }
 
-} // namespace testing
+} // namespace Testing
 } // namespace Kalman
 
 //! \name Test registration and assertion macros
@@ -210,7 +210,7 @@ inline int runAll() {
 //! \endcode
 #define TEST(suite_name, test_name)                                            \
   static void suite_name##_##test_name##_body();                               \
-  static ::Kalman::testing::Registrar suite_name##_##test_name##_registrar(    \
+  static ::Kalman::Testing::Registrar suite_name##_##test_name##_registrar(    \
       #suite_name, #test_name, &suite_name##_##test_name##_body);              \
   static void suite_name##_##test_name##_body()
 
@@ -221,7 +221,7 @@ inline int runAll() {
     std::ostringstream kalman_test_oss;                                        \
     kalman_test_oss << "Failure at " << __FILE__ << ":" << __LINE__            \
                     << "\n    " << msg_expr;                                   \
-    throw ::Kalman::testing::AssertionFailure(kalman_test_oss.str());          \
+    throw ::Kalman::Testing::AssertionFailure(kalman_test_oss.str());          \
   } while (0)
 
 #define ASSERT_TRUE(cond)                                                      \
@@ -267,8 +267,8 @@ inline int runAll() {
   do {                                                                         \
     float kalman_a = static_cast<float>(a);                                    \
     float kalman_b = static_cast<float>(b);                                    \
-    if (!::Kalman::testing::FloatingPoint<float>(kalman_a).AlmostEquals(       \
-            ::Kalman::testing::FloatingPoint<float>(kalman_b)))                \
+    if (!::Kalman::Testing::FloatingPoint<float>(kalman_a).AlmostEquals(       \
+            ::Kalman::Testing::FloatingPoint<float>(kalman_b)))                \
       KALMAN_TEST_FAIL("Expected " #a " ~= " #b " (" << kalman_a << " vs "     \
                                                      << kalman_b << ")");      \
   } while (0)
@@ -277,8 +277,8 @@ inline int runAll() {
   do {                                                                         \
     double kalman_a = static_cast<double>(a);                                  \
     double kalman_b = static_cast<double>(b);                                  \
-    if (!::Kalman::testing::FloatingPoint<double>(kalman_a).AlmostEquals(      \
-            ::Kalman::testing::FloatingPoint<double>(kalman_b)))               \
+    if (!::Kalman::Testing::FloatingPoint<double>(kalman_a).AlmostEquals(      \
+            ::Kalman::Testing::FloatingPoint<double>(kalman_b)))               \
       KALMAN_TEST_FAIL("Expected " #a " ~= " #b " (" << kalman_a << " vs "     \
                                                      << kalman_b << ")");      \
   } while (0)

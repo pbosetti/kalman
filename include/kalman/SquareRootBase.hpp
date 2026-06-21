@@ -35,44 +35,46 @@ namespace Kalman {
 template <class StateType> class SquareRootBase {
 protected:
   //! Covariance Square Root
-  CovarianceSquareRoot<StateType> S;
+  CovarianceSquareRoot<StateType> _S;
 
 public:
   /**
    * Get covariance (as square root)
    */
-  const CovarianceSquareRoot<StateType> &getCovarianceSquareRoot() const {
-    return S;
+  [[nodiscard]] const CovarianceSquareRoot<StateType> &
+  get_covariance_square_root() const {
+    return _S;
   }
 
   /**
    * Get covariance reconstructed from square root
    */
-  Covariance<StateType> getCovariance() const {
-    return S.reconstructedMatrix();
+  [[nodiscard]] Covariance<StateType> get_covariance() const {
+    return _S.reconstructedMatrix();
   }
 
   /**
    * Set Covariance
    */
-  bool setCovariance(const Covariance<StateType> &covariance) {
-    S.compute(covariance);
-    return (S.info() == Eigen::Success);
+  bool set_covariance(const Covariance<StateType> &covariance) {
+    _S.compute(covariance);
+    return (_S.info() == Eigen::Success);
   }
 
   /**
    * @brief Set Covariance using Square Root
    *
-   * @param covSquareRoot Lower triangular Matrix representing the covariance
-   *                      square root (i.e. P = LLˆT)
+   * @param cov_square_root Lower triangular Matrix representing the covariance
+   *                        square root (i.e. P = LLˆT)
    */
-  bool setCovarianceSquareRoot(const Covariance<StateType> &covSquareRoot) {
-    S.setL(covSquareRoot);
+  bool
+  set_covariance_square_root(const Covariance<StateType> &cov_square_root) {
+    _S.setL(cov_square_root);
     return true;
   }
 
 protected:
-  SquareRootBase() { S.setIdentity(); }
+  SquareRootBase() { _S.setIdentity(); }
 };
 } // namespace Kalman
 

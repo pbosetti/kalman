@@ -76,10 +76,10 @@ class SystemModel : public Kalman::LinearizedSystemModel<State<T>, Control<T>,
                                                          CovarianceBase> {
 public:
   //! State type shortcut definition
-  typedef KalmanExamples::Robot1::State<T> S;
+  using S = KalmanExamples::Robot1::State<T>;
 
   //! Control type shortcut definition
-  typedef KalmanExamples::Robot1::Control<T> C;
+  using C = KalmanExamples::Robot1::Control<T>;
 
   /**
    * @brief Definition of (non-linear) state transition function
@@ -131,25 +131,25 @@ protected:
    * @param x The current system state around which to linearize
    * @param u The current system control input
    */
-  void updateJacobians(const S &x, const C &u) {
+  void update_jacobians(const S &x, const C &u) {
     // F = df/dx (Jacobian of state transition w.r.t. the state)
-    this->F.setZero();
+    this->_F.setZero();
 
     // partial derivative of x.x() w.r.t. x.x()
-    this->F(S::X, S::X) = 1;
+    this->_F(S::X, S::X) = 1;
     // partial derivative of x.x() w.r.t. x.theta()
-    this->F(S::X, S::THETA) = -std::sin(x.theta() + u.dtheta()) * u.v();
+    this->_F(S::X, S::THETA) = -std::sin(x.theta() + u.dtheta()) * u.v();
 
     // partial derivative of x.y() w.r.t. x.y()
-    this->F(S::Y, S::Y) = 1;
+    this->_F(S::Y, S::Y) = 1;
     // partial derivative of x.y() w.r.t. x.theta()
-    this->F(S::Y, S::THETA) = std::cos(x.theta() + u.dtheta()) * u.v();
+    this->_F(S::Y, S::THETA) = std::cos(x.theta() + u.dtheta()) * u.v();
 
     // partial derivative of x.theta() w.r.t. x.theta()
-    this->F(S::THETA, S::THETA) = 1;
+    this->_F(S::THETA, S::THETA) = 1;
 
     // W = df/dw (Jacobian of state transition w.r.t. the noise)
-    this->W.setIdentity();
+    this->_W.setIdentity();
     // TODO: more sophisticated noise modelling
     //       i.e. The noise affects the the direction in which we move as
     //       well as the velocity (i.e. the distance we move)

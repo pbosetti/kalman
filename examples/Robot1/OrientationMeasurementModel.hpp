@@ -44,16 +44,16 @@ class OrientationMeasurementModel
           State<T>, OrientationMeasurement<T>, CovarianceBase> {
 public:
   //! State type shortcut definition
-  typedef KalmanExamples::Robot1::State<T> S;
+  using S = KalmanExamples::Robot1::State<T>;
 
   //! Measurement type shortcut definition
-  typedef KalmanExamples::Robot1::OrientationMeasurement<T> M;
+  using M = KalmanExamples::Robot1::OrientationMeasurement<T>;
 
   OrientationMeasurementModel() {
     // Setup jacobians. As these are static, we can define them once
     // and do not need to update them dynamically
-    this->H.setIdentity();
-    this->V.setIdentity();
+    this->_H.setIdentity();
+    this->_V.setIdentity();
   }
 
   /**

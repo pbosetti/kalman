@@ -27,6 +27,8 @@ endif()
 # or FetchContent therefore get nothing but the library target.
 option(KALMAN_BUILD_EXAMPLES "Build the Kalman examples" ${PROJECT_IS_TOP_LEVEL})
 option(KALMAN_BUILD_TESTS "Build the Kalman unit tests" ${PROJECT_IS_TOP_LEVEL})
+option(KALMAN_BUILD_BENCHMARKS "Build the Kalman benchmarks"
+       ${PROJECT_IS_TOP_LEVEL})
 option(KALMAN_INSTALL "Generate install and export rules for Kalman"
        ${PROJECT_IS_TOP_LEVEL})
 
@@ -52,7 +54,7 @@ target_include_directories(
   Kalman INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                    $<INSTALL_INTERFACE:include>)
 target_link_libraries(Kalman INTERFACE Eigen3::Eigen)
-target_compile_features(Kalman INTERFACE cxx_std_11)
+target_compile_features(Kalman INTERFACE cxx_std_20)
 
 # ----------------------------------------------------------------------------
 # Examples and tests
@@ -65,6 +67,10 @@ endif()
 if(KALMAN_BUILD_TESTS)
   enable_testing()
   add_subdirectory(test)
+endif()
+
+if(KALMAN_BUILD_BENCHMARKS)
+  add_subdirectory(benchmark)
 endif()
 
 # ----------------------------------------------------------------------------
