@@ -23,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clone upstream mherb/kalman
+        run: git clone --depth=1 https://github.com/mherb/kalman.git ${{ github.workspace }}/kalman_upstream
+
       - name: Configure
         run: |
           cmake -S . -B build \
@@ -30,7 +33,7 @@ jobs:
             -DKALMAN_BUILD_BENCHMARKS=ON \
             -DKALMAN_BUILD_TESTS=OFF \
             -DKALMAN_BUILD_EXAMPLES=OFF \
-            -DKALMAN_BENCHMARK_UPSTREAM=ON
+            -DKALMAN_BENCHMARK_UPSTREAM_DIR=${{ github.workspace }}/kalman_upstream
 
       - name: Build benchmarks
         run: cmake --build build --target kalman_benchmark kalman_benchmark_upstream
