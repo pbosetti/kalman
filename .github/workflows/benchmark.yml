@@ -24,17 +24,29 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DKALMAN_BUILD_BENCHMARKS=ON \
+            -DKALMAN_BUILD_TESTS=OFF \
+            -DKALMAN_BUILD_EXAMPLES=OFF \
+            -DKALMAN_BENCHMARK_UPSTREAM=ON
 
       - name: Build benchmarks
-        run: cmake --build build --target kalman_benchmark
+        run: cmake --build build --target kalman_benchmark kalman_benchmark_upstream
 
-      - name: Run benchmarks
-        run: ./build/benchmark/kalman_benchmark --markdown | tee benchmark.md
+      - name: Run this-fork benchmark
+        run: ./build/benchmark/kalman_benchmark --csv > this.csv
+
+      - name: Run upstream benchmark
+        run: ./build/benchmark/kalman_benchmark_upstream --csv > upstream.csv
+
+      - name: Build comparison table
+        run: python3 scripts/benchmark_compare.py this.csv upstream.csv > comparison.md
 
       - name: Update README table
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        run: python3 scripts/update_readme_benchmark.py benchmark.md
+        run: python3 scripts/update_readme_benchmark.py comparison.md
 
       - name: Commit updated README
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -46,5 +58,5 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
-          git commit -m "ci: refresh benchmark results in README [skip ci]"
+          git commit -m "ci: refresh benchmark comparison table in README [skip ci]"
           git push

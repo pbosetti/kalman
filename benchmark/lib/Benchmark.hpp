@@ -69,13 +69,17 @@ struct Registrar {
 //! here; the runner reads it at the end.
 inline volatile double sink = 0.0;
 
+//! Output format for the benchmark report.
+enum class Format { Plain, Markdown, Csv };
+
 //! Run every registered benchmark and print a report.
 //!
 //! @param iterations Units of work per benchmark (per-iteration cost = total
 //!                   time / iterations).
-//! @param markdown   Emit a GitHub-flavoured Markdown table when true.
+//! @param format     Plain text, a Markdown table, or CSV (filter,ns_per_cycle)
+//!                   for machine consumption.
 //! @return Process exit code (always 0; benchmarks do not assert).
-inline int run_all(std::size_t iterations, bool markdown) {
+inline int run_all(std::size_t iterations, Format format) {
   std::vector<BenchmarkCase> &cases = registry();
 
   struct Row {
@@ -99,7 +103,8 @@ inline int run_all(std::size_t iterations, bool markdown) {
   }
 
   std::ostringstream out;
-  if (markdown) {
+  switch (format) {
+  case Format::Markdown:
     out << "| Filter | Time / cycle | Throughput |\n";
     out << "| :----- | -----------: | ---------: |\n";
     for (const Row &r : rows) {
@@ -108,13 +113,21 @@ inline int run_all(std::size_t iterations, bool markdown) {
           << std::setprecision(2) << (1000.0 / r.ns_per_iter)
           << "M cycles/s |\n";
     }
-  } else {
+    break;
+  case Format::Csv:
+    out << "filter,ns_per_cycle\n";
+    for (const Row &r : rows)
+      out << r.name << "," << std::fixed << std::setprecision(3)
+          << r.ns_per_iter << "\n";
+    break;
+  case Format::Plain:
     out << "Benchmark results (" << iterations << " iterations each):\n";
     for (const Row &r : rows) {
       out << "  " << std::left << std::setw(28) << r.name << std::right
           << std::fixed << std::setprecision(1) << r.ns_per_iter
           << " ns/cycle\n";
     }
+    break;
   }
 
   std::cout << out.str();
