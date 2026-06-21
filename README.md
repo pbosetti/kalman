@@ -192,14 +192,14 @@ cmake --build build --target kalman_benchmark
 ```
 
 <!-- BENCHMARK:START -->
-_Last updated: 2026-06-21 20:38 UTC. Indicative numbers from the CI runner; absolute values vary with hardware._
+_Last updated: 2026-06-21 21:38 UTC. Indicative numbers from the CI runner; absolute values vary with hardware._
 
 | Filter | Time / cycle | Throughput |
 | :----- | -----------: | ---------: |
-| EKF | 0.114 µs | 8.78M cycles/s |
-| SR_EKF | 1.564 µs | 0.64M cycles/s |
-| UKF | 0.262 µs | 3.81M cycles/s |
-| SR_UKF | 1.376 µs | 0.73M cycles/s |
+| EKF | 0.099 µs | 10.13M cycles/s |
+| SR_EKF | 1.175 µs | 0.85M cycles/s |
+| UKF | 0.210 µs | 4.76M cycles/s |
+| SR_UKF | 0.978 µs | 1.02M cycles/s |
 <!-- BENCHMARK:END -->
 
 ## Coding style and conventions
