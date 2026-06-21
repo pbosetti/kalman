@@ -36,10 +36,10 @@ template <class StateType>
 class StandardFilterBase : public StandardBase<StateType> {
 protected:
   //! Standard Base Type
-  typedef StandardBase<StateType> Base;
+  using Base = StandardBase<StateType>;
 
   //! Covariance matrix
-  using Base::P;
+  using Base::_P;
 };
 } // namespace Kalman
 

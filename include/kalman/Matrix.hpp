@@ -26,14 +26,18 @@
 
 #include <Eigen/Dense>
 
+//! Convenience macro that injects the boilerplate constructors and assignment
+//! operators needed for a user-defined vector type to interoperate with Eigen
+//! expressions. Use it inside the body of a class deriving from
+//! Kalman::Vector<T, N>.
 #define KALMAN_VECTOR(NAME, T, N)                                              \
-  typedef Kalman::Vector<T, N> Base;                                           \
+  using Base = Kalman::Vector<T, N>;                                           \
   using typename Base::Scalar;                                                 \
   using Base::RowsAtCompileTime;                                               \
   using Base::ColsAtCompileTime;                                               \
   using Base::SizeAtCompileTime;                                               \
                                                                                \
-  NAME(void) : Kalman::Vector<T, N>() {}                                       \
+  NAME() : Kalman::Vector<T, N>() {}                                           \
                                                                                \
   template <typename OtherDerived>                                             \
   NAME(const Eigen::MatrixBase<OtherDerived> &other)                           \
@@ -46,7 +50,7 @@
   }
 
 namespace Kalman {
-const int Dynamic = Eigen::Dynamic;
+inline constexpr int Dynamic = Eigen::Dynamic;
 
 /**
  * @class Kalman::Matrix
@@ -66,14 +70,14 @@ using Matrix = Eigen::Matrix<T, rows, cols>;
 template <typename T, int N> class Vector : public Matrix<T, N, 1> {
 public:
   //! Matrix base type
-  typedef Matrix<T, N, 1> Base;
+  using Base = Matrix<T, N, 1>;
 
   using Base::ColsAtCompileTime;
   using Base::RowsAtCompileTime;
   using Base::SizeAtCompileTime;
   using typename Base::Scalar;
 
-  Vector(void) : Matrix<T, N, 1>() {}
+  Vector() : Matrix<T, N, 1>() {}
 
   /**
    * @brief Copy constructor
@@ -93,7 +97,12 @@ public:
 
 /**
  * @brief Cholesky square root decomposition of a symmetric positive-definite
- * matrix
+ *        matrix
+ *
+ * @note This type extends Eigen::LLT and therefore deliberately keeps Eigen's
+ *       camelCase member naming (setL, matrixL, ...) so that it composes
+ *       naturally with the surrounding Eigen API.
+ *
  * @param _MatrixType The matrix type
  * @param _UpLo Square root form (Eigen::Lower or Eigen::Upper)
  */
@@ -120,7 +129,7 @@ public:
   /**
    * @brief Check whether the decomposed matrix is the identity matrix
    */
-  bool isIdentity() const {
+  [[nodiscard]] bool isIdentity() const {
     eigen_assert(this->m_isInitialized && "LLT is not initialized.");
     return this->m_matrix.isIdentity();
   }

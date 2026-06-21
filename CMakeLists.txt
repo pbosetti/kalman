@@ -52,7 +52,7 @@ target_include_directories(
   Kalman INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                    $<INSTALL_INTERFACE:include>)
 target_link_libraries(Kalman INTERFACE Eigen3::Eigen)
-target_compile_features(Kalman INTERFACE cxx_std_11)
+target_compile_features(Kalman INTERFACE cxx_std_20)
 
 # ----------------------------------------------------------------------------
 # Examples and tests

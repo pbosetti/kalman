@@ -48,7 +48,7 @@ class LinearizedMeasurementModel
 
 public:
   //! Measurement model base
-  typedef MeasurementModel<StateType, MeasurementType, CovarianceBase> Base;
+  using Base = MeasurementModel<StateType, MeasurementType, CovarianceBase>;
 
   //! System state type
   using typename Base::State;
@@ -58,25 +58,24 @@ public:
 
 protected:
   //! Measurement model jacobian
-  Jacobian<Measurement, State> H;
+  Jacobian<Measurement, State> _H;
   //! Measurement model noise jacobian
-  Jacobian<Measurement, Measurement> V;
+  Jacobian<Measurement, Measurement> _V;
 
   /**
    * Callback function for state-dependent update of Jacobi-matrices H and V
    * before each update step
    */
-  virtual void updateJacobians(const State &x) {
+  virtual void update_jacobians([[maybe_unused]] const State &x) {
     // No update by default
-    (void)x;
   }
 
 protected:
   LinearizedMeasurementModel() {
-    H.setIdentity();
-    V.setIdentity();
+    _H.setIdentity();
+    _V.setIdentity();
   }
-  ~LinearizedMeasurementModel() {}
+  ~LinearizedMeasurementModel() = default;
 };
 } // namespace Kalman
 

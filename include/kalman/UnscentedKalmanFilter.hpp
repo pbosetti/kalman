@@ -47,10 +47,10 @@ class UnscentedKalmanFilter : public UnscentedKalmanFilterBase<StateType>,
                               public StandardFilterBase<StateType> {
 public:
   //! Unscented Kalman Filter base type
-  typedef UnscentedKalmanFilterBase<StateType> UnscentedBase;
+  using UnscentedBase = UnscentedKalmanFilterBase<StateType>;
 
   //! Standard Filter base type
-  typedef StandardFilterBase<StateType> StandardBase;
+  using StandardBase = StandardFilterBase<StateType>;
 
   //! Numeric Scalar Type inherited from base
   using typename UnscentedBase::T;
@@ -85,13 +85,13 @@ protected:
   // Member variables
 
   //! State Estimate
-  using UnscentedBase::x;
+  using UnscentedBase::_x;
 
   //! State Covariance
-  using StandardBase::P;
+  using StandardBase::_P;
 
   //! Sigma points (state)
-  using UnscentedBase::sigmaStatePoints;
+  using UnscentedBase::_sigma_state_points;
 
 public:
   /**
@@ -108,7 +108,7 @@ public:
   UnscentedKalmanFilter(T alpha = T(1), T beta = T(2), T kappa = T(0))
       : UnscentedKalmanFilterBase<StateType>(alpha, beta, kappa) {
     // Init covariance to identity
-    P.setIdentity();
+    _P.setIdentity();
   }
 
   /**
@@ -138,19 +138,20 @@ public:
   const State &predict(const SystemModelType<Control, CovarianceBase> &s,
                        const Control &u) {
     // Compute sigma points
-    if (!computeSigmaPoints()) {
+    if (!compute_sigma_points()) {
       // TODO: handle numerical error
       assert(false);
     }
 
     // Compute predicted state
-    x = this->template computeStatePrediction<Control, CovarianceBase>(s, u);
+    _x = this->template compute_state_prediction<Control, CovarianceBase>(s, u);
 
     // Compute predicted covariance
-    computeCovarianceFromSigmaPoints(x, sigmaStatePoints, s.getCovariance(), P);
+    compute_covariance_from_sigma_points(_x, _sigma_state_points,
+                                         s.get_covariance(), _P);
 
     // Return predicted state
-    return this->getState();
+    return this->get_state();
   }
 
   /**
@@ -165,28 +166,27 @@ public:
   const State &
   update(const MeasurementModelType<Measurement, CovarianceBase> &m,
          const Measurement &z) {
-    SigmaPoints<Measurement> sigmaMeasurementPoints;
+    SigmaPoints<Measurement> sigma_measurement_points;
 
     // Predict measurement (and corresponding sigma points)
-    Measurement y = this->template computeMeasurementPrediction<Measurement,
-                                                                CovarianceBase>(
-        m, sigmaMeasurementPoints);
+    Measurement y = this->template compute_measurement_prediction<
+        Measurement, CovarianceBase>(m, sigma_measurement_points);
 
     // Compute innovation covariance
     Covariance<Measurement> P_yy;
-    computeCovarianceFromSigmaPoints(y, sigmaMeasurementPoints,
-                                     m.getCovariance(), P_yy);
+    compute_covariance_from_sigma_points(y, sigma_measurement_points,
+                                         m.get_covariance(), P_yy);
 
     KalmanGain<Measurement> K;
-    computeKalmanGain(y, sigmaMeasurementPoints, P_yy, K);
+    compute_kalman_gain(y, sigma_measurement_points, P_yy, K);
 
     // Update state
-    x += K * (z - y);
+    _x += K * (z - y);
 
     // Update state covariance
-    updateStateCovariance<Measurement>(K, P_yy);
+    update_state_covariance<Measurement>(K, P_yy);
 
-    return this->getState();
+    return this->get_state();
   }
 
 protected:
@@ -196,26 +196,25 @@ protected:
    *
    * @note This covers equations (6) and (9) of Algorithm 2.1 in the Paper
    */
-  bool computeSigmaPoints() {
+  bool compute_sigma_points() {
     // Get square root of covariance
     CovarianceSquareRoot<State> llt;
-    llt.compute(P);
+    llt.compute(_P);
     if (llt.info() != Eigen::Success) {
       return false;
     }
 
-    SquareMatrix<T, State::RowsAtCompileTime> _S =
-        llt.matrixL().toDenseMatrix();
+    SquareMatrix<T, State::RowsAtCompileTime> S = llt.matrixL().toDenseMatrix();
 
     // Set left "block" (first column)
-    sigmaStatePoints.template leftCols<1>() = x;
+    _sigma_state_points.template leftCols<1>() = _x;
     // Set center block with x + gamma * S
-    sigmaStatePoints
+    _sigma_state_points
         .template block<State::RowsAtCompileTime, State::RowsAtCompileTime>(
-            0, 1) = (this->gamma * _S).colwise() + x;
+            0, 1) = (this->_gamma * S).colwise() + _x;
     // Set right block with x - gamma * S
-    sigmaStatePoints.template rightCols<State::RowsAtCompileTime>() =
-        (-this->gamma * _S).colwise() + x;
+    _sigma_state_points.template rightCols<State::RowsAtCompileTime>() =
+        (-this->_gamma * S).colwise() + _x;
 
     return true;
   }
@@ -224,23 +223,22 @@ protected:
    * @brief Compute the Covariance from sigma points and noise covariance
    *
    * @param [in] mean The mean predicted state or measurement
-   * @param [in] sigmaPoints the predicted sigma state or measurement points
-   * @param [in] noiseCov The system or measurement noise covariance
+   * @param [in] sigma_points the predicted sigma state or measurement points
+   * @param [in] noise_cov The system or measurement noise covariance
    * @param [out] cov The propagated state or innovation covariance
    *
    * @return True on success, false if a numerical error is encountered when
    * updating the matrix
    */
   template <class Type>
-  bool computeCovarianceFromSigmaPoints(const Type &mean,
-                                        const SigmaPoints<Type> &sigmaPoints,
-                                        const Covariance<Type> &noiseCov,
-                                        Covariance<Type> &cov) {
-    decltype(sigmaPoints) W =
-        this->sigmaWeights_c.transpose()
+  bool compute_covariance_from_sigma_points(
+      const Type &mean, const SigmaPoints<Type> &sigma_points,
+      const Covariance<Type> &noise_cov, Covariance<Type> &cov) {
+    decltype(sigma_points) W =
+        this->_sigma_weights_c.transpose()
             .template replicate<Type::RowsAtCompileTime, 1>();
-    decltype(sigmaPoints) tmp = (sigmaPoints.colwise() - mean);
-    cov = tmp.cwiseProduct(W) * tmp.transpose() + noiseCov;
+    decltype(sigma_points) tmp = (sigma_points.colwise() - mean);
+    cov = tmp.cwiseProduct(W) * tmp.transpose() + noise_cov;
 
     return true;
   }
@@ -252,24 +250,25 @@ protected:
    * @note This covers equations (11) and (12) of Algorithm 2.1 in the Paper
    *
    * @param [in] y The predicted measurement
-   * @param [in] sigmaMeasurementPoints The predicted sigma measurement points
+   * @param [in] sigma_measurement_points The predicted sigma measurement points
    * @param [in] P_yy The innovation covariance
    * @param [out] K The computed Kalman Gain matrix \f$ K \f$
    */
   template <class Measurement>
-  bool computeKalmanGain(const Measurement &y,
-                         const SigmaPoints<Measurement> &sigmaMeasurementPoints,
-                         const Covariance<Measurement> &P_yy,
-                         KalmanGain<Measurement> &K) {
+  bool
+  compute_kalman_gain(const Measurement &y,
+                      const SigmaPoints<Measurement> &sigma_measurement_points,
+                      const Covariance<Measurement> &P_yy,
+                      KalmanGain<Measurement> &K) {
     // Note: The intermediate eval() is needed here (for now) due to a bug in
     // Eigen that occurs when Measurement::RowsAtCompileTime == 1 AND
     // State::RowsAtCompileTime >= 8
-    decltype(sigmaStatePoints) W =
-        this->sigmaWeights_c.transpose()
+    decltype(_sigma_state_points) W =
+        this->_sigma_weights_c.transpose()
             .template replicate<State::RowsAtCompileTime, 1>();
     Matrix<T, State::RowsAtCompileTime, Measurement::RowsAtCompileTime> P_xy =
-        (sigmaStatePoints.colwise() - x).cwiseProduct(W).eval() *
-        (sigmaMeasurementPoints.colwise() - y).transpose();
+        (_sigma_state_points.colwise() - _x).cwiseProduct(W).eval() *
+        (sigma_measurement_points.colwise() - y).transpose();
 
     K = P_xy * P_yy.inverse();
     return true;
@@ -287,9 +286,9 @@ protected:
    * updating the matrix
    */
   template <class Measurement>
-  bool updateStateCovariance(const KalmanGain<Measurement> &K,
-                             const Covariance<Measurement> &P_yy) {
-    P -= K * P_yy * K.transpose();
+  bool update_state_covariance(const KalmanGain<Measurement> &K,
+                               const Covariance<Measurement> &P_yy) {
+    _P -= K * P_yy * K.transpose();
     return true;
   }
 };

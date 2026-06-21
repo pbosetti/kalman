@@ -22,6 +22,7 @@
 #ifndef KALMAN_KALMANFILTERBASE_HPP_
 #define KALMAN_KALMANFILTERBASE_HPP_
 
+#include "Concepts.hpp"
 #include "Matrix.hpp"
 #include "Types.hpp"
 
@@ -33,42 +34,35 @@ namespace Kalman {
  * @param StateType The vector-type of the system state (usually some type
  * derived from Kalman::Vector)
  */
-template <class StateType> class KalmanFilterBase {
+template <StateVector StateType> class KalmanFilterBase {
 public:
-  static_assert(
-      /*StateType::RowsAtCompileTime == Dynamic ||*/ StateType::
-              RowsAtCompileTime > 0,
-      "State vector must contain at least 1 element" /* or be dynamic */);
-  static_assert(StateType::ColsAtCompileTime == 1,
-                "State type must be a column vector");
-
   //! Numeric scalar type
-  typedef typename StateType::Scalar T;
+  using T = typename StateType::Scalar;
 
   //! Type of the state vector
-  typedef StateType State;
+  using State = StateType;
 
 protected:
   //! Estimated state
-  State x;
+  State _x;
 
 public:
   /**
    * Get current state estimate
    */
-  const State &getState() const { return x; }
+  [[nodiscard]] const State &get_state() const { return _x; }
 
   /**
    * @brief Initialize state
-   * @param initialState The initial state of the system
+   * @param initial_state The initial state of the system
    */
-  void init(const State &initialState) { x = initialState; }
+  void init(const State &initial_state) { _x = initial_state; }
 
 protected:
   /**
    * @brief Protected constructor
    */
-  KalmanFilterBase() {}
+  KalmanFilterBase() = default;
 };
 } // namespace Kalman
 

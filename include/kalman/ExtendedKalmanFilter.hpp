@@ -44,9 +44,9 @@ class ExtendedKalmanFilter : public KalmanFilterBase<StateType>,
                              public StandardFilterBase<StateType> {
 public:
   //! Kalman Filter base type
-  typedef KalmanFilterBase<StateType> KalmanBase;
+  using KalmanBase = KalmanFilterBase<StateType>;
   //! Standard Filter base type
-  typedef StandardFilterBase<StateType> StandardBase;
+  using StandardBase = StandardFilterBase<StateType>;
 
   //! Numeric Scalar Type inherited from base
   using typename KalmanBase::T;
@@ -70,9 +70,9 @@ protected:
 
 protected:
   //! State Estimate
-  using KalmanBase::x;
+  using KalmanBase::_x;
   //! State Covariance Matrix
-  using StandardBase::P;
+  using StandardBase::_P;
 
 public:
   /**
@@ -80,7 +80,7 @@ public:
    */
   ExtendedKalmanFilter() {
     // Setup state and covariance
-    P.setIdentity();
+    _P.setIdentity();
   }
 
   /**
@@ -109,17 +109,17 @@ public:
   template <class Control, template <class> class CovarianceBase>
   const State &predict(SystemModelType<Control, CovarianceBase> &s,
                        const Control &u) {
-    s.updateJacobians(x, u);
+    s.update_jacobians(_x, u);
 
     // predict state
-    x = s.f(x, u);
+    _x = s.f(_x, u);
 
     // predict covariance
-    P = (s.F * P * s.F.transpose()) +
-        (s.W * s.getCovariance() * s.W.transpose());
+    _P = (s._F * _P * s._F.transpose()) +
+         (s._W * s.get_covariance() * s._W.transpose());
 
     // return state prediction
-    return this->getState();
+    return this->get_state();
   }
 
   /**
@@ -133,25 +133,25 @@ public:
   template <class Measurement, template <class> class CovarianceBase>
   const State &update(MeasurementModelType<Measurement, CovarianceBase> &m,
                       const Measurement &z) {
-    m.updateJacobians(x);
+    m.update_jacobians(_x);
 
     // COMPUTE KALMAN GAIN
     // compute innovation covariance
-    Covariance<Measurement> S = (m.H * P * m.H.transpose()) +
-                                (m.V * m.getCovariance() * m.V.transpose());
+    Covariance<Measurement> S = (m._H * _P * m._H.transpose()) +
+                                (m._V * m.get_covariance() * m._V.transpose());
 
     // compute kalman gain
-    KalmanGain<Measurement> K = P * m.H.transpose() * S.inverse();
+    KalmanGain<Measurement> K = _P * m._H.transpose() * S.inverse();
 
     // UPDATE STATE ESTIMATE AND COVARIANCE
     // Update state using computed kalman gain and innovation
-    x += K * (z - m.h(x));
+    _x += K * (z - m.h(_x));
 
     // Update covariance
-    P -= K * m.H * P;
+    _P -= K * m._H * _P;
 
     // return updated state estimate
-    return this->getState();
+    return this->get_state();
   }
 };
 } // namespace Kalman

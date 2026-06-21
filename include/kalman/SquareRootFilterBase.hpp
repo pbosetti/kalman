@@ -36,10 +36,10 @@ template <class StateType>
 class SquareRootFilterBase : public SquareRootBase<StateType> {
 protected:
   //! SquareRoot Base Type
-  typedef SquareRootBase<StateType> Base;
+  using Base = SquareRootBase<StateType>;
 
   //! Covariance Square Root
-  using Base::S;
+  using Base::_S;
 };
 } // namespace Kalman
 

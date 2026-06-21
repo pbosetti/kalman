@@ -11,41 +11,41 @@ typedef float T;
 
 TEST(UnscentedKalmanFilter, init) {
   auto ukf = UnscentedKalmanFilter<Vector<T, 3>>(1, 2, 1);
-  ASSERT_TRUE(ukf.P.isIdentity()); // P should be identity
+  ASSERT_TRUE(ukf._P.isIdentity()); // P should be identity
 
   // Same as above, but with general matrix type instead of vector
   auto ukfMatrix = UnscentedKalmanFilter<Matrix<T, 3, 1>>(1, 2, 1);
-  ASSERT_TRUE(ukfMatrix.P.isIdentity()); // P should be identity
+  ASSERT_TRUE(ukfMatrix._P.isIdentity()); // P should be identity
 }
 
-TEST(UnscentedKalmanFilter, computeSigmaPoints) {
+TEST(UnscentedKalmanFilter, compute_sigma_points) {
   T alpha = 1, beta = 2, kappa = 1;
 
   auto ukf = UnscentedKalmanFilter<Vector<T, 3>>(alpha, beta, kappa);
 
   // Init variables
-  ukf.gamma = 2;
-  ukf.x << 1.f, 2.f, 3.f;
-  ukf.P.setIdentity();
+  ukf._gamma = 2;
+  ukf._x << 1.f, 2.f, 3.f;
+  ukf._P.setIdentity();
 
-  ASSERT_TRUE(ukf.computeSigmaPoints());
+  ASSERT_TRUE(ukf.compute_sigma_points());
 
-  ASSERT_FLOAT_EQ(1, ukf.sigmaStatePoints(0, 0));
-  ASSERT_FLOAT_EQ(2, ukf.sigmaStatePoints(1, 0));
-  ASSERT_FLOAT_EQ(3, ukf.sigmaStatePoints(2, 0));
+  ASSERT_FLOAT_EQ(1, ukf._sigma_state_points(0, 0));
+  ASSERT_FLOAT_EQ(2, ukf._sigma_state_points(1, 0));
+  ASSERT_FLOAT_EQ(3, ukf._sigma_state_points(2, 0));
 
   // Center block diagonal
-  ASSERT_FLOAT_EQ(3, ukf.sigmaStatePoints(0, 1));
-  ASSERT_FLOAT_EQ(4, ukf.sigmaStatePoints(1, 2));
-  ASSERT_FLOAT_EQ(5, ukf.sigmaStatePoints(2, 3));
+  ASSERT_FLOAT_EQ(3, ukf._sigma_state_points(0, 1));
+  ASSERT_FLOAT_EQ(4, ukf._sigma_state_points(1, 2));
+  ASSERT_FLOAT_EQ(5, ukf._sigma_state_points(2, 3));
 
   // Right block diagonal
-  ASSERT_FLOAT_EQ(-1, ukf.sigmaStatePoints(0, 4));
-  ASSERT_FLOAT_EQ(0, ukf.sigmaStatePoints(1, 5));
-  ASSERT_FLOAT_EQ(1, ukf.sigmaStatePoints(2, 6));
+  ASSERT_FLOAT_EQ(-1, ukf._sigma_state_points(0, 4));
+  ASSERT_FLOAT_EQ(0, ukf._sigma_state_points(1, 5));
+  ASSERT_FLOAT_EQ(1, ukf._sigma_state_points(2, 6));
 }
 
-TEST(UnscentedKalmanFilter, computeCovarianceSquareRootFromSigmaPoints) {
+TEST(UnscentedKalmanFilter, compute_covariance_square_root_from_sigma_points) {
   T alpha = 1, beta = 2, kappa = 1;
 
   auto ukf = UnscentedKalmanFilter<Vector<T, 3>>(alpha, beta, kappa);
@@ -56,7 +56,7 @@ TEST(UnscentedKalmanFilter, computeCovarianceSquareRootFromSigmaPoints) {
   Vector<T, 4> mean;
   mean << 2, 3, 4, 5;
 
-  ukf.sigmaWeights_c << 3, 5, 5, 5, 5, 5, 5;
+  ukf._sigma_weights_c << 3, 5, 5, 5, 5, 5, 5;
 
   Matrix<T, 4, 7> sigmaPoints;
   sigmaPoints << 1, 2, 1, 1, 0, 1, 1, 2, 3, 3, 2, 1, 1, 2, 3, 5, 4, 4, 1, 2, 2,
@@ -64,7 +64,8 @@ TEST(UnscentedKalmanFilter, computeCovarianceSquareRootFromSigmaPoints) {
 
   Matrix<T, 4, 4> P;
 
-  ASSERT_TRUE(ukf.computeCovarianceFromSigmaPoints(mean, sigmaPoints, R, P));
+  ASSERT_TRUE(
+      ukf.compute_covariance_from_sigma_points(mean, sigmaPoints, R, P));
 
   Matrix<T, 4, 4> P_ref;
   P_ref << 44, 43, 53, 86, 43, 57, 63, 91, 53, 63, 102, 106, 86, 91, 106, 228;
@@ -72,12 +73,12 @@ TEST(UnscentedKalmanFilter, computeCovarianceSquareRootFromSigmaPoints) {
   ASSERT_MATRIX_NEAR(P_ref, P, 1e-6);
 }
 
-TEST(UnscentedKalmanFilter, computeKalmanGain) {
+TEST(UnscentedKalmanFilter, compute_kalman_gain) {
   T alpha = 1, beta = 2, kappa = 1;
 
   auto ukf = UnscentedKalmanFilter<Vector<T, 3>>(alpha, beta, kappa);
 
-  ukf.sigmaWeights_c << 3, 5, 5, 5, 5, 5, 5;
+  ukf._sigma_weights_c << 3, 5, 5, 5, 5, 5, 5;
 
   Vector<T, 2> mean;
   mean << 2, 3;
@@ -90,10 +91,10 @@ TEST(UnscentedKalmanFilter, computeKalmanGain) {
   Matrix<T, 2, 2> P_yy;
   P_yy << 35, 34, 34, 46;
 
-  // x and sigmaStatePoints
-  ukf.x << 3, 5, 7;
-  ukf.sigmaStatePoints << 3, 5, 3, 3, 1, 3, 3, 5, 7, 7, 5, 3, 3, 5, 7, 11, 9, 9,
-      3, 5, 5;
+  // x and _sigma_state_points
+  ukf._x << 3, 5, 7;
+  ukf._sigma_state_points << 3, 5, 3, 3, 1, 3, 3, 5, 7, 7, 5, 3, 3, 5, 7, 11, 9,
+      9, 3, 5, 5;
 
   // Reference value for P
   Matrix<T, 3, 2> P_xy_ref;
@@ -106,12 +107,12 @@ TEST(UnscentedKalmanFilter, computeKalmanGain) {
 
   // Kalman gain to be computed
   Matrix<T, 3, 2> K;
-  ukf.computeKalmanGain(mean, sigmaPoints, P_yy, K);
+  ukf.compute_kalman_gain(mean, sigmaPoints, P_yy, K);
 
   ASSERT_MATRIX_NEAR(K_ref, K, 1e-6);
 }
 
-TEST(UnscentedKalmanFilter, updateStateCovariance) {
+TEST(UnscentedKalmanFilter, update_state_covariance) {
   T alpha = 1, beta = 2, kappa = 1;
 
   auto ukf = UnscentedKalmanFilter<Vector<T, 3>>(alpha, beta, kappa);
@@ -126,7 +127,7 @@ TEST(UnscentedKalmanFilter, updateStateCovariance) {
       0.802838317283324, -1.246156445345498, 0.063524243960128;
 
   // Setup P
-  ukf.P.setIdentity();
+  ukf._P.setIdentity();
 
   // Setup P_ref
   Matrix<T, 3, 3> P_ref;
@@ -135,8 +136,8 @@ TEST(UnscentedKalmanFilter, updateStateCovariance) {
       0.019295433443564, -0.130287401631777, 0.846090867814784;
 
   // Perform update
-  bool success = ukf.updateStateCovariance<Vector<T, 2>>(K, P_yy);
+  bool success = ukf.update_state_covariance<Vector<T, 2>>(K, P_yy);
   ASSERT_TRUE(success);
 
-  ASSERT_MATRIX_NEAR(P_ref, ukf.P, 1e-6);
+  ASSERT_MATRIX_NEAR(P_ref, ukf._P, 1e-6);
 }

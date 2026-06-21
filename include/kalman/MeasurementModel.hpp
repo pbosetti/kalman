@@ -22,8 +22,7 @@
 #ifndef KALMAN_MEASUREMENTMODEL_HPP_
 #define KALMAN_MEASUREMENTMODEL_HPP_
 
-#include <type_traits>
-
+#include "Concepts.hpp"
 #include "StandardBase.hpp"
 
 namespace Kalman {
@@ -37,27 +36,16 @@ namespace Kalman {
  * @param CovarianceBase The class template used for covariance storage (must be
  * either StandardBase or SquareRootBase)
  */
-template <class StateType, class MeasurementType,
+template <StateVector StateType, MeasurementVector MeasurementType,
           template <class> class CovarianceBase = StandardBase>
-class MeasurementModel : public CovarianceBase<MeasurementType> {
-  static_assert(
-      /*StateType::RowsAtCompileTime == Dynamic ||*/ StateType::
-              RowsAtCompileTime > 0,
-      "State vector must contain at least 1 element" /* or be dynamic */);
-  static_assert(
-      /*MeasurementType::RowsAtCompileTime == Dynamic ||*/ MeasurementType::
-              RowsAtCompileTime > 0,
-      "Measurement vector must contain at least 1 element" /* or be dynamic */);
-  static_assert(std::is_same<typename StateType::Scalar,
-                             typename MeasurementType::Scalar>::value,
-                "State and Measurement scalar types must be identical");
-
+requires SameScalar<StateType, MeasurementType> class MeasurementModel
+    : public CovarianceBase<MeasurementType> {
 public:
   //! System state type
-  typedef StateType State;
+  using State = StateType;
 
   //! Measurement vector type
-  typedef MeasurementType Measurement;
+  using Measurement = MeasurementType;
 
 public:
   /**
@@ -68,8 +56,8 @@ public:
   virtual Measurement h(const State &x) const = 0;
 
 protected:
-  MeasurementModel() {}
-  virtual ~MeasurementModel() {}
+  MeasurementModel() = default;
+  virtual ~MeasurementModel() = default;
 };
 } // namespace Kalman
 

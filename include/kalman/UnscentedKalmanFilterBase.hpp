@@ -45,9 +45,8 @@ namespace Kalman {
 template <class StateType>
 class UnscentedKalmanFilterBase : public KalmanFilterBase<StateType> {
 public:
-  // Public typedefs
   //! Kalman Filter base type
-  typedef KalmanFilterBase<StateType> Base;
+  using Base = KalmanFilterBase<StateType>;
 
   //! Numeric Scalar Type inherited from base
   using typename Base::T;
@@ -65,12 +64,11 @@ public:
   using SystemModelType = SystemModel<State, Control, CovarianceBase>;
 
 protected:
-  // Protected typedefs
   //! The number of sigma points (depending on state dimensionality)
   static constexpr int SigmaPointCount = 2 * State::RowsAtCompileTime + 1;
 
   //! Vector containg the sigma scaling weights
-  typedef Vector<T, SigmaPointCount> SigmaWeights;
+  using SigmaWeights = Vector<T, SigmaPointCount>;
 
   //! Matrix type containing the sigma state or measurement points
   template <class Type>
@@ -80,26 +78,26 @@ protected:
   // Member variables
 
   //! State Estimate
-  using Base::x;
+  using Base::_x;
 
   //! Sigma weights (m)
-  SigmaWeights sigmaWeights_m;
+  SigmaWeights _sigma_weights_m;
   //! Sigma weights (c)
-  SigmaWeights sigmaWeights_c;
+  SigmaWeights _sigma_weights_c;
 
   //! Sigma points (state)
-  SigmaPoints<State> sigmaStatePoints;
+  SigmaPoints<State> _sigma_state_points;
 
   // Weight parameters
-  T alpha; //!< Scaling parameter for spread of sigma points (usually \f$ 1E-4
-           //!< \leq \alpha \leq 1 \f$)
-  T beta; //!< Parameter for prior knowledge about the distribution (\f$ \beta =
-          //!< 2 \f$ is optimal for Gaussian)
-  T kappa;  //!< Secondary scaling parameter (usually 0)
-  T gamma;  //!< \f$ \gamma = \sqrt{L + \lambda} \f$ with \f$ L \f$ being the
+  T _alpha; //!< Scaling parameter for spread of sigma points (usually \f$ 1E-4
+            //!< \leq \alpha \leq 1 \f$)
+  T _beta;  //!< Parameter for prior knowledge about the distribution (\f$ \beta
+            //!< = 2 \f$ is optimal for Gaussian)
+  T _kappa; //!< Secondary scaling parameter (usually 0)
+  T _gamma; //!< \f$ \gamma = \sqrt{L + \lambda} \f$ with \f$ L \f$ being the
             //!< state dimensionality
-  T lambda; //!< \f$ \lambda = \alpha^2 ( L + \kappa ) - L\f$ with \f$ L \f$
-            //!< being the state dimensionality
+  T _lambda; //!< \f$ \lambda = \alpha^2 ( L + \kappa ) - L\f$ with \f$ L \f$
+             //!< being the state dimensionality
 
 protected:
   /**
@@ -107,19 +105,19 @@ protected:
    *
    * See paper for parameter explanation
    *
-   * @param _alpha Scaling parameter for spread of sigma points (usually 1e-4 <=
+   * @param alpha Scaling parameter for spread of sigma points (usually 1e-4 <=
    * alpha <= 1)
-   * @param _beta Parameter for prior knowledge about the distribution (beta = 2
+   * @param beta Parameter for prior knowledge about the distribution (beta = 2
    * is optimal for Gaussian)
-   * @param _kappa Secondary scaling parameter (usually 0)
+   * @param kappa Secondary scaling parameter (usually 0)
    */
-  UnscentedKalmanFilterBase(T _alpha = T(1), T _beta = T(2), T _kappa = T(0))
-      : alpha(_alpha), beta(_beta), kappa(_kappa) {
+  UnscentedKalmanFilterBase(T alpha = T(1), T beta = T(2), T kappa = T(0))
+      : _alpha(alpha), _beta(beta), _kappa(kappa) {
     // Pre-compute all weights
-    computeWeights();
+    compute_weights();
 
     // Setup state and covariance
-    x.setZero();
+    _x.setZero();
   }
 
   /**
@@ -131,13 +129,13 @@ protected:
    */
   template <class Control, template <class> class CovarianceBase>
   State
-  computeStatePrediction(const SystemModelType<Control, CovarianceBase> &s,
-                         const Control &u) {
+  compute_state_prediction(const SystemModelType<Control, CovarianceBase> &s,
+                           const Control &u) {
     // Pass each sigma point through non-linear state transition function
-    computeSigmaPointTransition(s, u);
+    compute_sigma_point_transition(s, u);
 
     // Compute predicted state from predicted sigma points
-    return computePredictionFromSigmaPoints<State>(sigmaStatePoints);
+    return compute_prediction_from_sigma_points<State>(_sigma_state_points);
   }
 
   /**
@@ -145,48 +143,48 @@ protected:
    * sigma measurements
    *
    * @param [in] m The Measurement Model
-   * @param [in] sigmaMeasurementPoints The predicted sigma measurement points
+   * @param [in] sigma_measurement_points The predicted sigma measurement points
    * @return The predicted measurement
    */
   template <class Measurement, template <class> class CovarianceBase>
-  Measurement computeMeasurementPrediction(
+  Measurement compute_measurement_prediction(
       const MeasurementModelType<Measurement, CovarianceBase> &m,
-      SigmaPoints<Measurement> &sigmaMeasurementPoints) {
+      SigmaPoints<Measurement> &sigma_measurement_points) {
     // Predict measurements for each sigma point
-    computeSigmaPointMeasurements<Measurement>(m, sigmaMeasurementPoints);
+    compute_sigma_point_measurements<Measurement>(m, sigma_measurement_points);
 
     // Predict measurement from sigma measurement points
-    return computePredictionFromSigmaPoints<Measurement>(
-        sigmaMeasurementPoints);
+    return compute_prediction_from_sigma_points<Measurement>(
+        sigma_measurement_points);
   }
 
   /**
    * @brief Compute sigma weights
    */
-  void computeWeights() {
+  void compute_weights() {
     T L = T(State::RowsAtCompileTime);
-    lambda = alpha * alpha * (L + kappa) - L;
-    gamma = std::sqrt(L + lambda);
+    _lambda = _alpha * _alpha * (L + _kappa) - L;
+    _gamma = std::sqrt(L + _lambda);
 
     // Make sure L != -lambda to avoid division by zero
-    assert(std::abs(L + lambda) > 1e-6);
+    assert(std::abs(L + _lambda) > 1e-6);
 
     // Make sure L != -kappa to avoid division by zero
-    assert(std::abs(L + kappa) > 1e-6);
+    assert(std::abs(L + _kappa) > 1e-6);
 
-    T W_m_0 = lambda / (L + lambda);
-    T W_c_0 = W_m_0 + (T(1) - alpha * alpha + beta);
-    T W_i = T(1) / (T(2) * alpha * alpha * (L + kappa));
+    T W_m_0 = _lambda / (L + _lambda);
+    T W_c_0 = W_m_0 + (T(1) - _alpha * _alpha + _beta);
+    T W_i = T(1) / (T(2) * _alpha * _alpha * (L + _kappa));
 
     // Make sure W_i > 0 to avoid square-root of negative number
     assert(W_i > T(0));
 
-    sigmaWeights_m[0] = W_m_0;
-    sigmaWeights_c[0] = W_c_0;
+    _sigma_weights_m[0] = W_m_0;
+    _sigma_weights_c[0] = W_c_0;
 
     for (int i = 1; i < SigmaPointCount; ++i) {
-      sigmaWeights_m[i] = W_i;
-      sigmaWeights_c[i] = W_i;
+      _sigma_weights_m[i] = W_i;
+      _sigma_weights_c[i] = W_i;
     }
   }
 
@@ -200,11 +198,10 @@ protected:
    * @param [in] u The Control input
    */
   template <class Control, template <class> class CovarianceBase>
-  void
-  computeSigmaPointTransition(const SystemModelType<Control, CovarianceBase> &s,
-                              const Control &u) {
+  void compute_sigma_point_transition(
+      const SystemModelType<Control, CovarianceBase> &s, const Control &u) {
     for (int i = 0; i < SigmaPointCount; ++i) {
-      sigmaStatePoints.col(i) = s.f(sigmaStatePoints.col(i), u);
+      _sigma_state_points.col(i) = s.f(_sigma_state_points.col(i), u);
     }
   }
 
@@ -215,15 +212,15 @@ protected:
    * @note This covers equation (23) of Algorithm 3.1 in the Paper
    *
    * @param [in] m The Measurement model
-   * @param [out] sigmaMeasurementPoints The struct of expected sigma
+   * @param [out] sigma_measurement_points The struct of expected sigma
    * measurements to be computed
    */
   template <class Measurement, template <class> class CovarianceBase>
-  void computeSigmaPointMeasurements(
+  void compute_sigma_point_measurements(
       const MeasurementModelType<Measurement, CovarianceBase> &m,
-      SigmaPoints<Measurement> &sigmaMeasurementPoints) {
+      SigmaPoints<Measurement> &sigma_measurement_points) {
     for (int i = 0; i < SigmaPointCount; ++i) {
-      sigmaMeasurementPoints.col(i) = m.h(sigmaStatePoints.col(i));
+      sigma_measurement_points.col(i) = m.h(_sigma_state_points.col(i));
     }
   }
 
@@ -233,14 +230,15 @@ protected:
    *
    * @note This covers equations (19) and (24) of Algorithm 3.1 in the Paper
    *
-   * @param [in] sigmaPoints The computed sigma points of the desired type
+   * @param [in] sigma_points The computed sigma points of the desired type
    * (state or measurement)
    * @return The prediction
    */
   template <class Type>
-  Type computePredictionFromSigmaPoints(const SigmaPoints<Type> &sigmaPoints) {
+  Type
+  compute_prediction_from_sigma_points(const SigmaPoints<Type> &sigma_points) {
     // Use efficient matrix x vector computation
-    return sigmaPoints * sigmaWeights_m;
+    return sigma_points * _sigma_weights_m;
   }
 };
 } // namespace Kalman
