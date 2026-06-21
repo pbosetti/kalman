@@ -42,8 +42,10 @@
 #include <cstdint>
 #include <exception>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace Kalman {
