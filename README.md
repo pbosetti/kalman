@@ -160,6 +160,24 @@ Two worked examples are included:
   motion model and two different sensors (range-to-landmarks and a compass),
   compared across the EKF and UKF.
 
+## Python and R bindings
+
+Prefer to drive the filter from Python or R? Callback-based bindings to the
+Unscented Kalman Filter are provided under [`bindings/`](bindings/) — supply
+`f(x)` and `h(x)` in your language and the C++ core does the rest:
+
+```python
+import numpy as np, kalman
+ukf = kalman.UnscentedKalmanFilter(
+    state_dim=2, measurement_dim=1,
+    f=lambda x: np.array([x[0] + x[1], x[1]]),
+    h=lambda x: np.array([x[0]]))
+ukf.predict(); ukf.update(np.array([2.1]))
+```
+
+See [`bindings/README.md`](bindings/README.md) for the Python (pybind11) and R
+(Rcpp) build and usage instructions. Both are exercised in CI.
+
 ## Performance
 
 One full *predict + measurement-update* cycle of the Robot1 model (3-D state,

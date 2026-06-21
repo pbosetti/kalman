@@ -1,0 +1,63 @@
+name: Bindings
+
+on:
+  push:
+    branches: [master, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: bindings-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (pybind11)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip pybind11 numpy pytest
+
+      - name: Build the extension
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DKALMAN_BUILD_PYTHON=ON \
+            -DKALMAN_BUILD_TESTS=OFF \
+            -DKALMAN_BUILD_EXAMPLES=OFF \
+            -DKALMAN_BUILD_BENCHMARKS=OFF \
+            -Dpybind11_DIR="$(python -m pybind11 --cmakedir)"
+          cmake --build build --target kalman_python
+
+      - name: Run Python tests
+        run: PYTHONPATH=build/bindings/python python -m pytest bindings/python -v
+
+  r:
+    name: R (Rcpp)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "release"
+
+      - name: Install R dependencies
+        run: |
+          Rscript -e 'install.packages(c("Rcpp", "RcppEigen", "testthat"), repos = "https://cloud.r-project.org")'
+
+      - name: Generate Rcpp exports
+        run: Rscript -e 'Rcpp::compileAttributes("bindings/r/kalmanr")'
+
+      - name: Install the package
+        run: KALMAN_HOME="$GITHUB_WORKSPACE" R CMD INSTALL bindings/r/kalmanr
+
+      - name: Run R tests
+        run: |
+          Rscript -e 'library(kalmanr); library(testthat); test_dir("bindings/r/kalmanr/tests/testthat", stop_on_failure = TRUE)'

@@ -1,0 +1,3 @@
+useDynLib(kalmanr, .registration = TRUE)
+importFrom(Rcpp, evalCpp)
+export(UnscentedKalmanFilter)

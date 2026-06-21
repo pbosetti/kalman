@@ -13,3 +13,10 @@ documentation
 # Python
 __pycache__/
 *.pyc
+
+# R package build artifacts (RcppExports are generated at build time)
+bindings/r/kalmanr/src/RcppExports.cpp
+bindings/r/kalmanr/R/RcppExports.R
+bindings/r/kalmanr/src/*.o
+bindings/r/kalmanr/src/*.so
+*.Rcheck/
