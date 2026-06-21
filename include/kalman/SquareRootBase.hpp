@@ -25,63 +25,57 @@
 #include "Types.hpp"
 
 namespace Kalman {
-    
-    /**
-     * @brief Abstract base class for square-root filters and models
-     * 
-     * @param StateType The vector-type of the system state (usually some type derived from Kalman::Vector)
-     */
-    template<class StateType>
-    class SquareRootBase
-    {
-    protected:
-        //! Covariance Square Root
-        CovarianceSquareRoot<StateType> S;
-        
-    public:
-        /**
-         * Get covariance (as square root)
-         */
-        const CovarianceSquareRoot<StateType>& getCovarianceSquareRoot() const
-        {
-            return S;
-        }
-        
-        /**
-         * Get covariance reconstructed from square root
-         */
-        Covariance<StateType> getCovariance() const
-        {
-            return S.reconstructedMatrix();
-        }
-        
-        /**
-         * Set Covariance
-         */
-        bool setCovariance(const Covariance<StateType>& covariance)
-        {
-            S.compute(covariance);
-            return (S.info() == Eigen::Success);
-        }
 
-        /**
-         * @brief Set Covariance using Square Root
-         *
-         * @param covSquareRoot Lower triangular Matrix representing the covariance
-         *                      square root (i.e. P = LLˆT)
-         */
-        bool setCovarianceSquareRoot(const Covariance<StateType>& covSquareRoot)
-        {
-            S.setL(covSquareRoot);
-            return true;
-        }
-        
-    protected:
-        SquareRootBase()
-        {
-            S.setIdentity();
-        }
-    };
-}
+/**
+ * @brief Abstract base class for square-root filters and models
+ *
+ * @param StateType The vector-type of the system state (usually some type
+ * derived from Kalman::Vector)
+ */
+template <class StateType> class SquareRootBase {
+protected:
+  //! Covariance Square Root
+  CovarianceSquareRoot<StateType> S;
+
+public:
+  /**
+   * Get covariance (as square root)
+   */
+  [[nodiscard]] const CovarianceSquareRoot<StateType> &
+  get_covariance_square_root() const {
+    return S;
+  }
+
+  /**
+   * Get covariance reconstructed from square root
+   */
+  [[nodiscard]] Covariance<StateType> get_covariance() const {
+    return S.reconstructedMatrix();
+  }
+
+  /**
+   * Set Covariance
+   */
+  bool set_covariance(const Covariance<StateType> &covariance) {
+    S.compute(covariance);
+    return (S.info() == Eigen::Success);
+  }
+
+  /**
+   * @brief Set Covariance using Square Root
+   *
+   * @param cov_square_root Lower triangular Matrix representing the covariance
+   *                        square root (i.e. P = LLˆT)
+   */
+  bool
+  set_covariance_square_root(const Covariance<StateType> &cov_square_root) {
+    S.setL(cov_square_root);
+    return true;
+  }
+
+protected:
+  SquareRootBase() { S.setIdentity(); }
+};
+} // namespace Kalman
 
 #endif

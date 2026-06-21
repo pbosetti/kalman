@@ -22,59 +22,48 @@
 #ifndef KALMAN_KALMANFILTERBASE_HPP_
 #define KALMAN_KALMANFILTERBASE_HPP_
 
+#include "Concepts.hpp"
 #include "Matrix.hpp"
 #include "Types.hpp"
 
 namespace Kalman {
-    
-    /**
-     * @brief Abstract base class for all Kalman Filters
-     * 
-     * @param StateType The vector-type of the system state (usually some type derived from Kalman::Vector)
-     */
-    template<class StateType>
-    class KalmanFilterBase
-    {
-    public:
-        static_assert(/*StateType::RowsAtCompileTime == Dynamic ||*/StateType::RowsAtCompileTime > 0,
-                      "State vector must contain at least 1 element" /* or be dynamic */);
-        static_assert(StateType::ColsAtCompileTime == 1, "State type must be a column vector");
 
-        //! Numeric scalar type
-        typedef typename StateType::Scalar T;
-        
-        //! Type of the state vector
-        typedef StateType State;
-        
-    protected:
-        //! Estimated state
-        State x;
-        
-    public:
-        /**
-         * Get current state estimate
-         */
-        const State& getState() const
-        {
-            return x;
-        }
-        
-        /**
-         * @brief Initialize state
-         * @param initialState The initial state of the system
-         */
-        void init(const State& initialState)
-        {
-            x = initialState;
-        }
-    protected:
-        /**
-         * @brief Protected constructor
-         */
-        KalmanFilterBase()
-        {
-        }
-    };
-}
+/**
+ * @brief Abstract base class for all Kalman Filters
+ *
+ * @param StateType The vector-type of the system state (usually some type
+ * derived from Kalman::Vector)
+ */
+template <StateVector StateType> class KalmanFilterBase {
+public:
+  //! Numeric scalar type
+  using T = typename StateType::Scalar;
+
+  //! Type of the state vector
+  using State = StateType;
+
+protected:
+  //! Estimated state
+  State x;
+
+public:
+  /**
+   * Get current state estimate
+   */
+  [[nodiscard]] const State &get_state() const { return x; }
+
+  /**
+   * @brief Initialize state
+   * @param initial_state The initial state of the system
+   */
+  void init(const State &initial_state) { x = initial_state; }
+
+protected:
+  /**
+   * @brief Protected constructor
+   */
+  KalmanFilterBase() = default;
+};
+} // namespace Kalman
 
 #endif

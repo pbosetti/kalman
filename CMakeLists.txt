@@ -1,117 +1,123 @@
-cmake_minimum_required(VERSION 2.8)
-project(Kalman CXX)
+cmake_minimum_required(VERSION 3.16)
 
-# TODO: Use VERSION argument to project command after raising the minimum
-# cmake version to 3.0
-set(PROJECT_VERSION_MAJOR 0)
-set(PROJECT_VERSION_MINOR 1)
-set(PROJECT_VERSION_PATCH 0)
-set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+project(
+  Kalman
+  VERSION 1.0.0
+  DESCRIPTION
+    "Header-only C++ Kalman filter library (EKF, SR-EKF, UKF, SR-UKF)"
+  HOMEPAGE_URL "https://github.com/pbosetti/kalman"
+  LANGUAGES CXX)
 
-include(CTest)
+# ----------------------------------------------------------------------------
+# Project options
+# ----------------------------------------------------------------------------
 
-set(KALMAN_CXX_FLAGS "-std=c++11")
+# PROJECT_IS_TOP_LEVEL is provided automatically by CMake >= 3.21. Define it
+# manually for older versions so the same logic works everywhere.
+if(NOT DEFINED PROJECT_IS_TOP_LEVEL)
+  if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(PROJECT_IS_TOP_LEVEL TRUE)
+  else()
+    set(PROJECT_IS_TOP_LEVEL FALSE)
+  endif()
+endif()
 
-option(KALMAN_BUILD_EXAMPLES "Build the Kalman examples" ON)
+# By default examples, tests and install rules are only enabled when Kalman is
+# the top-level project. Consumers that pull Kalman in via add_subdirectory()
+# or FetchContent therefore get nothing but the library target.
+option(KALMAN_BUILD_EXAMPLES "Build the Kalman examples" ${PROJECT_IS_TOP_LEVEL})
+option(KALMAN_BUILD_TESTS "Build the Kalman unit tests" ${PROJECT_IS_TOP_LEVEL})
+option(KALMAN_BUILD_BENCHMARKS "Build the Kalman benchmarks"
+       ${PROJECT_IS_TOP_LEVEL})
+option(KALMAN_BUILD_PYTHON "Build the Python bindings (pybind11)" OFF)
+option(KALMAN_INSTALL "Generate install and export rules for Kalman"
+       ${PROJECT_IS_TOP_LEVEL})
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-find_package(Eigen3 REQUIRED)
+# ----------------------------------------------------------------------------
+# Dependencies
+# ----------------------------------------------------------------------------
 
-set(HEADERS
-    # Base
-    include/kalman/KalmanFilterBase.hpp
-    include/kalman/StandardBase.hpp
-    include/kalman/SquareRootBase.hpp
-    include/kalman/StandardFilterBase.hpp
-    include/kalman/SquareRootFilterBase.hpp
+include(Eigen)
 
-    # EKF
-    include/kalman/ExtendedKalmanFilter.hpp
-    include/kalman/SquareRootExtendedKalmanFilter.hpp
+# ----------------------------------------------------------------------------
+# The library (header-only INTERFACE target)
+# ----------------------------------------------------------------------------
 
-    # UKF
-    include/kalman/UnscentedKalmanFilterBase.hpp
-    include/kalman/UnscentedKalmanFilter.hpp
-    include/kalman/SquareRootUnscentedKalmanFilter.hpp
+# The real target is named `Kalman` so that, combined with the `Kalman::`
+# export namespace, both build-tree (add_subdirectory / FetchContent) and
+# installed (find_package) consumers reference the identical `Kalman::Kalman`.
+add_library(Kalman INTERFACE)
+add_library(Kalman::Kalman ALIAS Kalman)
 
-    # Models
-    include/kalman/MeasurementModel.hpp
-    include/kalman/SystemModel.hpp
-    include/kalman/LinearizedMeasurementModel.hpp
-    include/kalman/LinearizedSystemModel.hpp
+target_include_directories(
+  Kalman INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                   $<INSTALL_INTERFACE:include>)
+target_link_libraries(Kalman INTERFACE Eigen3::Eigen)
+target_compile_features(Kalman INTERFACE cxx_std_20)
 
-    # Utils
-    include/kalman/Matrix.hpp
-    include/kalman/Types.hpp
-)
+# ----------------------------------------------------------------------------
+# Examples and tests
+# ----------------------------------------------------------------------------
 
-include_directories(
-    "include"
-    ${Eigen3_INCLUDE_DIR}
-)
-
-# Flags
-set(CMAKE_CXX_FLAGS "${KALMAN_CXX_FLAGS} -Wall -pedantic -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DEIGEN_NO_DEBUG")
-
-# Examples
 if(KALMAN_BUILD_EXAMPLES)
-  add_executable(example_robot1 "examples/Robot1/main.cpp")
+  add_subdirectory(examples)
 endif()
 
-# Unit Tests
-set(TESTS
-    # EKF
-    test/ExtendedKalmanFilter.cpp
-    
-    # UKF
-    test/UnscentedKalmanFilterBase.cpp
-    test/UnscentedKalmanFilter.cpp
-    test/SquareRootUnscentedKalmanFilter.cpp
-    
-    # Utils
-    test/StandardBase.cpp
-    test/SquareRootBase.cpp
-    test/Matrix.cpp
-)
-
-if(BUILD_TESTING)
+if(KALMAN_BUILD_TESTS)
   enable_testing()
-  add_subdirectory("external/googletest")
-  include_directories("external/googletest/include")
-  add_executable(kalman_test ${TESTS} ${HEADERS})
-  target_link_libraries(kalman_test PRIVATE gtest gtest_main)
-  add_test(Kalman kalman_test)
+  add_subdirectory(test)
 endif()
 
-#
-# Install/Uninstall support
-#
-include(CMakePackageConfigHelpers)
-set(KALMAN_INCLUDE_DIR include/
-  CACHE PATH "The directory where Kalman headers are installed")
-set(KALMAN_CONFIG_CMAKE_PATH lib${LIB_SUFFIX}/cmake/kalman
-  CACHE PATH "The directory where the CMake files are installed")
+if(KALMAN_BUILD_BENCHMARKS)
+  add_subdirectory(benchmark)
+endif()
 
-set(KALMAN_USE_FILE ${KALMAN_CONFIG_CMAKE_PATH}/UseKalman.cmake)
+if(KALMAN_BUILD_PYTHON)
+  add_subdirectory(bindings/python)
+endif()
 
-configure_package_config_file(cmake/KalmanConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/KalmanConfig.cmake
-  INSTALL_DESTINATION ${KALMAN_CONFIG_CMAKE_PATH}
-  PATH_VARS KALMAN_INCLUDE_DIR KALMAN_USE_FILE)
-write_basic_package_version_file(
-  ${CMAKE_CURRENT_BINARY_DIR}/KalmanConfigVersion.cmake
-  VERSION ${PROJECT_VERSION}
-  COMPATIBILITY SameMajorVersion)
+# ----------------------------------------------------------------------------
+# Install / export
+# ----------------------------------------------------------------------------
 
-# Install targets
-install(DIRECTORY include/kalman DESTINATION include)
-install(FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseKalman.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/KalmanConfig.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/KalmanConfigVersion.cmake
-  DESTINATION ${KALMAN_CONFIG_CMAKE_PATH})
+if(KALMAN_INSTALL AND KALMAN_EIGEN_FETCHED)
+  message(
+    STATUS
+      "Kalman: Eigen was fetched with FetchContent, so install/export rules "
+      "are disabled. Install Eigen system-wide to enable them.")
+endif()
 
-# Add uninstall target
-add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/KalmanUninstall.cmake)
+if(KALMAN_INSTALL AND NOT KALMAN_EIGEN_FETCHED)
+  include(GNUInstallDirs)
+  include(CMakePackageConfigHelpers)
+
+  set(KALMAN_CMAKE_CONFIG_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/Kalman")
+
+  install(TARGETS Kalman EXPORT KalmanTargets)
+  install(DIRECTORY include/kalman DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+  install(
+    EXPORT KalmanTargets
+    FILE KalmanTargets.cmake
+    NAMESPACE Kalman::
+    DESTINATION ${KALMAN_CMAKE_CONFIG_DIR})
+
+  configure_package_config_file(
+    cmake/KalmanConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/KalmanConfig.cmake"
+    INSTALL_DESTINATION ${KALMAN_CMAKE_CONFIG_DIR})
+
+  write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/KalmanConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/KalmanConfig.cmake"
+                "${CMAKE_CURRENT_BINARY_DIR}/KalmanConfigVersion.cmake"
+          DESTINATION ${KALMAN_CMAKE_CONFIG_DIR})
+
+  export(EXPORT KalmanTargets NAMESPACE Kalman::
+         FILE "${CMAKE_CURRENT_BINARY_DIR}/KalmanTargets.cmake")
+endif()

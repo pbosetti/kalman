@@ -1,0 +1,12 @@
+# Build the kalmanr package against the in-repo Kalman headers.
+#
+# KALMAN_HOME must point at the repository root so the compiler can find
+# <kalman/...> and "KalmanWrapper.hpp". When building from a checkout, set it to
+# the repository root, e.g.:
+#
+#     KALMAN_HOME=$(pwd) R CMD INSTALL bindings/r/kalmanr
+#
+# Eigen is provided through LinkingTo: RcppEigen.
+
+CXX_STD = CXX20
+PKG_CPPFLAGS = -I$(KALMAN_HOME)/include -I$(KALMAN_HOME)/bindings

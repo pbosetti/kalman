@@ -1,0 +1,17 @@
+# Formatting style for the Kalman filter library.
+#
+# Based on the LLVM coding style (2-space indent, 80 column limit, pointer
+# bound to the type-name side). Pinned with explicit keys so that results are
+# reproducible across clang-format versions; CI enforces this with
+# clang-format 18.
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++17
+ColumnLimit: 80
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+PointerAlignment: Right
+ReflowComments: true
+SortIncludes: CaseInsensitive

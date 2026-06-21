@@ -25,22 +25,22 @@
 #include "StandardBase.hpp"
 
 namespace Kalman {
-    
-    /**
-     * @brief Abstract base class for standard (non-square root) filters
-     * 
-     * @param StateType The vector-type of the system state (usually some type derived from Kalman::Vector)
-     */
-    template<class StateType>
-    class StandardFilterBase : public StandardBase<StateType>
-    {
-    protected:
-        //! Standard Base Type
-        typedef StandardBase<StateType> Base;
-        
-        //! Covariance matrix
-        using Base::P;
-    };
-}
+
+/**
+ * @brief Abstract base class for standard (non-square root) filters
+ *
+ * @param StateType The vector-type of the system state (usually some type
+ * derived from Kalman::Vector)
+ */
+template <class StateType>
+class StandardFilterBase : public StandardBase<StateType> {
+protected:
+  //! Standard Base Type
+  using Base = StandardBase<StateType>;
+
+  //! Covariance matrix
+  using Base::P;
+};
+} // namespace Kalman
 
 #endif

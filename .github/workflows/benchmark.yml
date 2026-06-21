@@ -1,0 +1,86 @@
+name: Benchmark
+
+# Runs the benchmark suite and refreshes the results table in the README.
+# Updating + committing only happens on pushes to master; on pull requests the
+# benchmarks are built and run (as a smoke test) but the README is not modified.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone upstream mherb/kalman
+        id: clone_upstream
+        continue-on-error: true
+        # Clone into a directory named "kalman" so that its headers (under
+        # include/kalman/) are found via -I<upstream>/kalman/include.
+        run: |
+          mkdir -p ${{ github.workspace }}/upstream
+          git clone --depth=1 https://github.com/mherb/kalman.git \
+            ${{ github.workspace }}/upstream/kalman
+
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DKALMAN_BUILD_BENCHMARKS=ON \
+            -DKALMAN_BUILD_TESTS=OFF \
+            -DKALMAN_BUILD_EXAMPLES=OFF \
+            -DKALMAN_BENCHMARK_UPSTREAM_DIR=${{ github.workspace }}/upstream
+
+      - name: Build main benchmark
+        run: cmake --build build --target kalman_benchmark
+
+      - name: Build upstream benchmark
+        id: build_upstream
+        continue-on-error: true
+        # mherb/kalman uses .h extensions while its Robot1 examples include .hpp,
+        # which causes a compile error when building without its own CMakeLists.
+        # We treat this target as best-effort; the job still passes without it.
+        run: cmake --build build --target kalman_benchmark_upstream
+
+      - name: Run this-fork benchmark
+        run: ./build/benchmark/kalman_benchmark --csv > this.csv
+
+      - name: Run upstream benchmark
+        if: steps.build_upstream.outcome == 'success'
+        run: ./build/benchmark/kalman_benchmark_upstream --csv > upstream.csv
+
+      - name: Build comparison table
+        if: steps.build_upstream.outcome == 'success'
+        run: python3 scripts/benchmark_compare.py this.csv upstream.csv > comparison.md
+
+      - name: Build single-filter table (upstream unavailable)
+        if: steps.build_upstream.outcome != 'success'
+        run: ./build/benchmark/kalman_benchmark --markdown > comparison.md
+
+      - name: Update README table
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: python3 scripts/update_readme_benchmark.py comparison.md
+
+      - name: Commit updated README
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "No benchmark changes to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "ci: refresh benchmark comparison table in README [skip ci]"
+          git push
