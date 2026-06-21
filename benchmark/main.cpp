@@ -26,9 +26,13 @@
 
 #include "lib/Benchmark.hpp"
 
+// Defines Robot1::State and must precede the measurement-model headers below:
+// the upstream models (unlike this fork's) are not self-contained. Kept in its
+// own include block so clang-format does not reorder it after the others.
+#include "SystemModel.hpp"
+
 #include "OrientationMeasurementModel.hpp"
 #include "PositionMeasurementModel.hpp"
-#include "SystemModel.hpp"
 
 #include <kalman/ExtendedKalmanFilter.hpp>
 #include <kalman/SquareRootExtendedKalmanFilter.hpp>
@@ -116,17 +120,19 @@ BENCHMARK(SR_UKF, iterations) {
 
 int main(int argc, char **argv) {
   std::size_t iterations = 200000;
-  bool markdown = false;
+  Kalman::Benchmarking::Format format = Kalman::Benchmarking::Format::Plain;
 
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     if (arg == "--markdown" || arg == "-m") {
-      markdown = true;
+      format = Kalman::Benchmarking::Format::Markdown;
+    } else if (arg == "--csv") {
+      format = Kalman::Benchmarking::Format::Csv;
     } else if (arg.rfind("--iterations=", 0) == 0) {
       iterations = static_cast<std::size_t>(std::strtoull(
           arg.c_str() + std::string("--iterations=").size(), nullptr, 10));
     }
   }
 
-  return Kalman::Benchmarking::run_all(iterations, markdown);
+  return Kalman::Benchmarking::run_all(iterations, format);
 }

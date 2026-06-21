@@ -160,10 +160,30 @@ Two worked examples are included:
   motion model and two different sensors (range-to-landmarks and a compass),
   compared across the EKF and UKF.
 
+## Python and R bindings
+
+Prefer to drive the filter from Python or R? Callback-based bindings to the
+Unscented Kalman Filter are provided under [`bindings/`](bindings/) — supply
+`f(x)` and `h(x)` in your language and the C++ core does the rest:
+
+```python
+import numpy as np, kalman
+ukf = kalman.UnscentedKalmanFilter(
+    state_dim=2, measurement_dim=1,
+    f=lambda x: np.array([x[0] + x[1], x[1]]),
+    h=lambda x: np.array([x[0]]))
+ukf.predict(); ukf.update(np.array([2.1]))
+```
+
+See [`bindings/README.md`](bindings/README.md) for the Python (pybind11) and R
+(Rcpp) build and usage instructions. Both are exercised in CI.
+
 ## Performance
 
 One full *predict + measurement-update* cycle of the Robot1 model (3-D state,
-`float`), measured by the bundled benchmark suite. Reproduce locally with:
+`float`), measured by the bundled benchmark suite and compared against the
+original [mherb/kalman](https://github.com/mherb/kalman) upstream. Reproduce
+locally with:
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -172,14 +192,14 @@ cmake --build build --target kalman_benchmark
 ```
 
 <!-- BENCHMARK:START -->
-_Last updated: 2026-06-21 14:38 UTC. Indicative numbers from the CI runner; absolute values vary with hardware._
+_Last updated: 2026-06-21 19:29 UTC. Indicative numbers from the CI runner; absolute values vary with hardware._
 
-| Filter | Time / cycle | Throughput |
-| :----- | -----------: | ---------: |
-| EKF | 0.114 µs | 8.79M cycles/s |
-| SR_EKF | 1.587 µs | 0.63M cycles/s |
-| UKF | 0.263 µs | 3.80M cycles/s |
-| SR_UKF | 1.392 µs | 0.72M cycles/s |
+| Filter | This fork | Upstream (mherb/kalman) | Speedup |
+| :----- | --------: | ----------------------: | ------: |
+| EKF | 0.128 µs | 0.128 µs | 1.00× |
+| SR_EKF | 1.332 µs | 1.332 µs | 1.00× |
+| UKF | 0.250 µs | 0.250 µs | 1.00× |
+| SR_UKF | 1.249 µs | 1.249 µs | 1.00× |
 <!-- BENCHMARK:END -->
 
 ## Coding style and conventions

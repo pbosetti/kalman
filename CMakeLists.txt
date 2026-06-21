@@ -29,6 +29,7 @@ option(KALMAN_BUILD_EXAMPLES "Build the Kalman examples" ${PROJECT_IS_TOP_LEVEL}
 option(KALMAN_BUILD_TESTS "Build the Kalman unit tests" ${PROJECT_IS_TOP_LEVEL})
 option(KALMAN_BUILD_BENCHMARKS "Build the Kalman benchmarks"
        ${PROJECT_IS_TOP_LEVEL})
+option(KALMAN_BUILD_PYTHON "Build the Python bindings (pybind11)" OFF)
 option(KALMAN_INSTALL "Generate install and export rules for Kalman"
        ${PROJECT_IS_TOP_LEVEL})
 
@@ -71,6 +72,10 @@ endif()
 
 if(KALMAN_BUILD_BENCHMARKS)
   add_subdirectory(benchmark)
+endif()
+
+if(KALMAN_BUILD_PYTHON)
+  add_subdirectory(bindings/python)
 endif()
 
 # ----------------------------------------------------------------------------
