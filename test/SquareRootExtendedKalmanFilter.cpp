@@ -29,16 +29,15 @@ TEST(SquareRootExtendedKalmanFilter, update_state_covariance) {
 
   // Kalman gain (3-state, 2-measurement)
   Matrix<T, 3, 2> K;
-  K << 0.178408514951850f, -0.304105423213381f,
-      -1.110998479472884f,  0.802838317283324f,
-      -1.246156445345498f,  0.063524243960128f;
+  K << 0.178408514951850f, -0.304105423213381f, -1.110998479472884f,
+      0.802838317283324f, -1.246156445345498f, 0.063524243960128f;
 
   // Start from identity state covariance
   ekf._S.setIdentity();
 
   // Reference: naive formula P_new = P - K * P_yy * K^T
   Matrix<T, 3, 3> P_ref = ekf._S.reconstructedMatrix() -
-                           K * S_y.reconstructedMatrix() * K.transpose();
+                          K * S_y.reconstructedMatrix() * K.transpose();
 
   // Apply rank-1 downdate
   bool success = ekf.update_state_covariance<Vector<T, 2>>(K, S_y);
