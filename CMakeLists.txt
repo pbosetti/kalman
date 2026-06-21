@@ -27,6 +27,8 @@ endif()
 # or FetchContent therefore get nothing but the library target.
 option(KALMAN_BUILD_EXAMPLES "Build the Kalman examples" ${PROJECT_IS_TOP_LEVEL})
 option(KALMAN_BUILD_TESTS "Build the Kalman unit tests" ${PROJECT_IS_TOP_LEVEL})
+option(KALMAN_BUILD_BENCHMARKS "Build the Kalman benchmarks"
+       ${PROJECT_IS_TOP_LEVEL})
 option(KALMAN_INSTALL "Generate install and export rules for Kalman"
        ${PROJECT_IS_TOP_LEVEL})
 
@@ -65,6 +67,10 @@ endif()
 if(KALMAN_BUILD_TESTS)
   enable_testing()
   add_subdirectory(test)
+endif()
+
+if(KALMAN_BUILD_BENCHMARKS)
+  add_subdirectory(benchmark)
 endif()
 
 # ----------------------------------------------------------------------------

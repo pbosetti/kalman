@@ -226,7 +226,9 @@ protected:
       const Jacobian<Type, Type> &B, const CovarianceSquareRoot<Type> &R,
       CovarianceSquareRoot<Type> &S_pred) {
     // Compute QR decomposition of (transposed) augmented matrix
-    Matrix<T, State::RowsAtCompileTime + Type::RowsAtCompileTime,
+    Matrix<T,
+           static_cast<int>(State::RowsAtCompileTime) +
+               static_cast<int>(Type::RowsAtCompileTime),
            Type::RowsAtCompileTime>
         tmp;
     tmp.template topRows<State::RowsAtCompileTime>() =
