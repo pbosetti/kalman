@@ -192,14 +192,14 @@ cmake --build build --target kalman_benchmark
 ```
 
 <!-- BENCHMARK:START -->
-_Last updated: 2026-06-21 19:29 UTC. Indicative numbers from the CI runner; absolute values vary with hardware._
+_Last updated: 2026-06-21 20:38 UTC. Indicative numbers from the CI runner; absolute values vary with hardware._
 
-| Filter | This fork | Upstream (mherb/kalman) | Speedup |
-| :----- | --------: | ----------------------: | ------: |
-| EKF | 0.128 µs | 0.128 µs | 1.00× |
-| SR_EKF | 1.332 µs | 1.332 µs | 1.00× |
-| UKF | 0.250 µs | 0.250 µs | 1.00× |
-| SR_UKF | 1.249 µs | 1.249 µs | 1.00× |
+| Filter | Time / cycle | Throughput |
+| :----- | -----------: | ---------: |
+| EKF | 0.114 µs | 8.78M cycles/s |
+| SR_EKF | 1.564 µs | 0.64M cycles/s |
+| UKF | 0.262 µs | 3.81M cycles/s |
+| SR_UKF | 1.376 µs | 0.73M cycles/s |
 <!-- BENCHMARK:END -->
 
 ## Coding style and conventions
