@@ -24,7 +24,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Clone upstream mherb/kalman
-        run: git clone --depth=1 https://github.com/mherb/kalman.git ${{ github.workspace }}/kalman_upstream
+        # Clone into a directory named "kalman" so that #include <kalman/...>
+        # resolves correctly when the parent directory is on the include path.
+        run: |
+          mkdir -p ${{ github.workspace }}/upstream
+          git clone --depth=1 https://github.com/mherb/kalman.git \
+            ${{ github.workspace }}/upstream/kalman
 
       - name: Configure
         run: |
@@ -33,7 +38,7 @@ jobs:
             -DKALMAN_BUILD_BENCHMARKS=ON \
             -DKALMAN_BUILD_TESTS=OFF \
             -DKALMAN_BUILD_EXAMPLES=OFF \
-            -DKALMAN_BENCHMARK_UPSTREAM_DIR=${{ github.workspace }}/kalman_upstream
+            -DKALMAN_BENCHMARK_UPSTREAM_DIR=${{ github.workspace }}/upstream
 
       - name: Build benchmarks
         run: cmake --build build --target kalman_benchmark kalman_benchmark_upstream
