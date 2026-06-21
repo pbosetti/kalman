@@ -13,3 +13,10 @@ target_include_directories(
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(kalman_benchmark PRIVATE -Wall -Wextra)
 endif()
+
+# Instantiating all four filters in one translation unit produces a very large
+# object; MSVC (especially in Debug) needs /bigobj to stay under the COFF
+# section limit.
+if(MSVC)
+  target_compile_options(kalman_benchmark PRIVATE /bigobj)
+endif()

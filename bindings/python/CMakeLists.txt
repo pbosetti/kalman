@@ -25,3 +25,9 @@ target_link_libraries(kalman_python PRIVATE Kalman::Kalman)
 target_include_directories(kalman_python
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set_target_properties(kalman_python PROPERTIES OUTPUT_NAME kalman)
+
+# The wrapper instantiates the filter for every supported dimension pair, which
+# yields a large object file; MSVC needs /bigobj to stay under the COFF limit.
+if(MSVC)
+  target_compile_options(kalman_python PRIVATE /bigobj)
+endif()

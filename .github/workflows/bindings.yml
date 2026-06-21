@@ -48,9 +48,13 @@ jobs:
         with:
           r-version: "release"
 
-      - name: Install R dependencies
-        run: |
-          Rscript -e 'install.packages(c("Rcpp", "RcppEigen", "testthat"), repos = "https://cloud.r-project.org")'
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: bindings/r/kalmanr
+          extra-packages: |
+            any::Rcpp
+            any::RcppEigen
+            any::testthat
 
       - name: Generate Rcpp exports
         run: Rscript -e 'Rcpp::compileAttributes("bindings/r/kalmanr")'
