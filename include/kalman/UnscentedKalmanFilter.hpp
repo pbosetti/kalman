@@ -270,7 +270,9 @@ protected:
         (_sigma_state_points.colwise() - _x).cwiseProduct(W).eval() *
         (sigma_measurement_points.colwise() - y).transpose();
 
-    K = P_xy * P_yy.inverse();
+    // K = P_xy * P_yy^{-1}; solved as K^T = P_yy^{-1} * P_xy^T via Cholesky
+    // to avoid the O(n^3) explicit inverse and improve numerical stability.
+    K = P_yy.llt().solve(P_xy.transpose()).transpose();
     return true;
   }
 

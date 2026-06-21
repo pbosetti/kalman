@@ -140,15 +140,18 @@ public:
     Covariance<Measurement> S = (m._H * _P * m._H.transpose()) +
                                 (m._V * m.get_covariance() * m._V.transpose());
 
-    // compute kalman gain
-    KalmanGain<Measurement> K = _P * m._H.transpose() * S.inverse();
+    // compute kalman gain: K = P H^T S^{-1}
+    // Rearranged as K^T = S^{-1} H P (S symmetric) and solved via Cholesky
+    // to avoid the O(n^3) explicit inverse and improve numerical stability.
+    KalmanGain<Measurement> K = S.llt().solve(m._H * _P).transpose();
 
     // UPDATE STATE ESTIMATE AND COVARIANCE
     // Update state using computed kalman gain and innovation
     _x += K * (z - m.h(_x));
 
-    // Update covariance
-    _P -= K * m._H * _P;
+    // Update covariance — eval() prevents aliasing since _P appears on both
+    // sides of the compound assignment.
+    _P -= (K * m._H * _P).eval();
 
     // return updated state estimate
     return this->get_state();
