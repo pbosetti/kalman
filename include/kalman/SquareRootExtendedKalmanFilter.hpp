@@ -150,7 +150,7 @@ public:
     _x += K * (z - m.h(_x));
 
     // Update covariance
-    update_state_covariance<Measurement>(K, m._H);
+    update_state_covariance<Measurement>(K, S_y);
 
     // return updated state estimate
     return this->get_state();
@@ -284,19 +284,36 @@ protected:
   }
 
   /**
-   * @brief Update state covariance using Kalman gain
+   * @brief Update state covariance using Kalman gain and innovation covariance
+   * square root via sequential rank-1 downdates.
+   *
+   * Starting from \f$ P = SS^T \f$ and the update formula
+   * \f[ P^+ = P - K P_{yy} K^T \f]
+   * and substituting \f$ P_{yy} = S_y S_y^T \f$ gives
+   * \f[ P^+ = SS^T - (KS_y)(KS_y)^T \f]
+   *
+   * Defining \f$ U = K S_y \f$, \f$ P^+ \f$ is obtained by applying one rank-1
+   * downdate per column of \f$ U \f$:
+   * \f[ S \leftarrow \text{choldowndate}(S,\, U_{:,i}) \quad
+   *     \text{for } i = 0,\ldots,m-1 \f]
+   *
+   * This avoids both the \f$ O(n^2) \f$ matrix reconstruction and the
+   * \f$ O(n^3) \f$ full Cholesky redecomposition of the naive approach.
    *
    * @param [in] K The Kalman gain
-   * @param [in] H The jacobian of the measurement function w.r.t. the state
+   * @param [in] S_y The innovation covariance square root
    */
   template <class Measurement>
   bool update_state_covariance(const KalmanGain<Measurement> &K,
-                               const Jacobian<Measurement, State> &H) {
-    // TODO: update covariance without using decomposition
-    Matrix<T, State::RowsAtCompileTime, State::RowsAtCompileTime> P =
-        _S.reconstructedMatrix();
-    _S.compute((P - K * H * P).eval());
-    return (_S.info() == Eigen::Success);
+                               const CovarianceSquareRoot<Measurement> &S_y) {
+    KalmanGain<Measurement> U = K * S_y.matrixL();
+    for (int i = 0; i < U.cols(); ++i) {
+      _S.rankUpdate(U.col(i), T(-1));
+      if (_S.info() == Eigen::NumericalIssue) {
+        return false;
+      }
+    }
+    return true;
   }
 };
 } // namespace Kalman
