@@ -7,4 +7,5 @@ CMakeLists.txt.user
 
 # Project
 *build
+build*/
 documentation

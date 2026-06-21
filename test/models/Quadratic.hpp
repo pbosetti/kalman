@@ -1,47 +1,44 @@
 #ifndef KALMAN_TEST_MODELS_QUADRATIC_HPP_
 #define KALMAN_TEST_MODELS_QUADRATIC_HPP_
 
-#include <kalman/SystemModel.hpp>
 #include <kalman/MeasurementModel.hpp>
+#include <kalman/SystemModel.hpp>
 
-namespace Kalman
-{
-namespace Test
-{
-namespace Models
-{
+namespace Kalman {
+namespace Test {
+namespace Models {
 
-template<class StateType>
-class QuadraticSystemModel : public SystemModel<StateType, StateType>
-{
+template <class StateType>
+class QuadraticSystemModel : public SystemModel<StateType, StateType> {
 public:
-    typedef SystemModel<StateType, StateType> Base;
-    using typename Base::State;
-    using typename Base::Control;
-    
-    State f(const State& x, const Control& u) const
-    {
-        // return x.^2 + u
-        return x.cwiseProduct(x) + u;
-    }
+  typedef SystemModel<StateType, StateType> Base;
+  using typename Base::Control;
+  using typename Base::State;
+
+  State f(const State &x, const Control &u) const {
+    // return x.^2 + u
+    return x.cwiseProduct(x) + u;
+  }
 };
 
-template<class StateType, class MeasurementType = StateType>
-class QuadraticMeasurementModel : public MeasurementModel<StateType, MeasurementType>
-{
+template <class StateType, class MeasurementType = StateType>
+class QuadraticMeasurementModel
+    : public MeasurementModel<StateType, MeasurementType> {
 public:
-    typedef MeasurementModel<StateType, MeasurementType> Base;
-    using typename Base::State;
-    using typename Base::Measurement;
-    
-    static_assert(static_cast<decltype(Kalman::Dynamic)>(MeasurementType::RowsAtCompileTime) <= static_cast<decltype(Kalman::Dynamic)>(StateType::RowsAtCompileTime),
-                  "Measurement length must be less than or equal to State length");
-    
-    Measurement h(const State& x) const
-    {
-        // return x.^2
-        return x.cwiseProduct(x).template head<Measurement::RowsAtCompileTime>();
-    }
+  typedef MeasurementModel<StateType, MeasurementType> Base;
+  using typename Base::Measurement;
+  using typename Base::State;
+
+  static_assert(
+      static_cast<decltype(Kalman::Dynamic)>(
+          MeasurementType::RowsAtCompileTime) <=
+          static_cast<decltype(Kalman::Dynamic)>(StateType::RowsAtCompileTime),
+      "Measurement length must be less than or equal to State length");
+
+  Measurement h(const State &x) const {
+    // return x.^2
+    return x.cwiseProduct(x).template head<Measurement::RowsAtCompileTime>();
+  }
 };
 
 } // namespace Models

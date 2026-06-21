@@ -19,28 +19,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-#ifndef KALMAN_SQUAREROOTFILTERBASE_HPP_
-#define KALMAN_SQUAREROOTFILTERBASE_HPP_
+#include "lib/Test.hpp"
 
-#include "SquareRootBase.hpp"
-
-namespace Kalman {
-
-/**
- * @brief Abstract base class for square root filters
- *
- * @param StateType The vector-type of the system state (usually some type
- * derived from Kalman::Vector)
- */
-template <class StateType>
-class SquareRootFilterBase : public SquareRootBase<StateType> {
-protected:
-  //! SquareRoot Base Type
-  typedef SquareRootBase<StateType> Base;
-
-  //! Covariance Square Root
-  using Base::S;
-};
-} // namespace Kalman
-
-#endif
+//! Entry point for the unit-test executable. All test cases register
+//! themselves automatically at static-initialization time, so the runner only
+//! needs to execute them and forward the aggregate result as the exit code.
+int main() { return ::Kalman::testing::runAll(); }

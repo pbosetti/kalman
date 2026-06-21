@@ -1,6 +1,6 @@
 # Kalman Filter Library
 
-[![Build Status](https://travis-ci.org/mherb/kalman.svg?branch=master)](https://travis-ci.org/mherb/kalman)
+[![CI](https://github.com/pbosetti/kalman/actions/workflows/ci.yml/badge.svg)](https://github.com/pbosetti/kalman/actions/workflows/ci.yml)
 
 This is a header-only C++11 library implementing common variants of the well-known [Kalman-Filter](https://en.wikipedia.org/wiki/Kalman_filter).
 Currently implementations of these filter variants are included:
@@ -10,9 +10,54 @@ Currently implementations of these filter variants are included:
 * Unscented Kalman Filter (UKF)
 * Square Root Unscented Kalman Filter (SR-UKF)
 
+> This repository is a modernized review of the original
+> [mherb/kalman](https://github.com/mherb/kalman) library.
+
 ## Dependencies
 
 This library makes heavy use of the excellent [Eigen3 library](http://eigen.tuxfamily.org) for linear algebra operations and is thus a required dependency.
+The build system locates Eigen automatically: it uses a system installation if
+one is available, and otherwise downloads a pinned release (3.4.0) via CMake's
+`FetchContent`. No manual setup is required.
+
+## Building and running the tests
+
+The project is built with CMake (>= 3.16). The unit tests use a small, bundled
+test harness and require no external testing framework.
+
+```sh
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## Using the library
+
+Being header-only, the library can be used by simply adding the `include`
+directory to your include path and linking against Eigen. The recommended way
+to consume it from another CMake project is `FetchContent`:
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+  kalman
+  GIT_REPOSITORY https://github.com/pbosetti/kalman.git
+  GIT_TAG        master)
+FetchContent_MakeAvailable(kalman)
+
+target_link_libraries(my_target PRIVATE Kalman::Kalman)
+```
+
+Alternatively, after installing the library (`cmake --install build`), it can be
+located with `find_package`:
+
+```cmake
+find_package(Kalman REQUIRED)
+target_link_libraries(my_target PRIVATE Kalman::Kalman)
+```
+
+In both cases the `Kalman::Kalman` target propagates the include directories and
+the Eigen dependency automatically.
 
 ## Usage
 In order to use the library to do state estimation, a number of things have to be done:
