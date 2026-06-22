@@ -234,11 +234,9 @@ protected:
   bool compute_covariance_from_sigma_points(
       const Type &mean, const SigmaPoints<Type> &sigma_points,
       const Covariance<Type> &noise_cov, Covariance<Type> &cov) {
-    decltype(sigma_points) W =
-        this->_sigma_weights_c.transpose()
-            .template replicate<Type::RowsAtCompileTime, 1>();
     decltype(sigma_points) tmp = (sigma_points.colwise() - mean);
-    cov = tmp.cwiseProduct(W) * tmp.transpose() + noise_cov;
+    cov =
+        tmp * this->_sigma_weights_c.asDiagonal() * tmp.transpose() + noise_cov;
 
     return true;
   }
@@ -260,14 +258,9 @@ protected:
                       const SigmaPoints<Measurement> &sigma_measurement_points,
                       const Covariance<Measurement> &P_yy,
                       KalmanGain<Measurement> &K) {
-    // Note: The intermediate eval() is needed here (for now) due to a bug in
-    // Eigen that occurs when Measurement::RowsAtCompileTime == 1 AND
-    // State::RowsAtCompileTime >= 8
-    decltype(_sigma_state_points) W =
-        this->_sigma_weights_c.transpose()
-            .template replicate<State::RowsAtCompileTime, 1>();
     Matrix<T, State::RowsAtCompileTime, Measurement::RowsAtCompileTime> P_xy =
-        (_sigma_state_points.colwise() - _x).cwiseProduct(W).eval() *
+        (_sigma_state_points.colwise() - _x) *
+        this->_sigma_weights_c.asDiagonal() *
         (sigma_measurement_points.colwise() - y).transpose();
 
     // K = P_xy * P_yy^{-1}; solved as K^T = P_yy^{-1} * P_xy^T via Cholesky

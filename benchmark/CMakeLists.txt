@@ -46,6 +46,19 @@ if(KALMAN_BENCHMARK_UPSTREAM_DIR)
       "KALMAN_BENCHMARK_UPSTREAM_DIR='${KALMAN_BENCHMARK_UPSTREAM_DIR}' does not "
       "contain a 'kalman/' sub-directory. Clone mherb/kalman into that sub-directory.")
   else()
+    # mherb/kalman uses .h extensions for its library headers, but its Robot1
+    # examples include <kalman/Foo.hpp> (.hpp). Generate lightweight .hpp shim
+    # files in the build tree that forward each include to the corresponding .h
+    # file so that the upstream Robot1 models compile without modification.
+    set(_shim_dir "${CMAKE_CURRENT_BINARY_DIR}/upstream_shims/kalman")
+    file(MAKE_DIRECTORY "${_shim_dir}")
+    file(GLOB _upstream_h_files CONFIGURE_DEPENDS "${_upstream_root}/*.h")
+    foreach(_h_file ${_upstream_h_files})
+      get_filename_component(_base "${_h_file}" NAME_WE)
+      file(WRITE "${_shim_dir}/${_base}.hpp"
+           "#pragma once\n#include <kalman/${_base}.h>\n")
+    endforeach()
+
     # Reuse the same main.cpp but point at upstream Robot1 models and headers.
     # Eigen is already available from the outer project.
     add_executable(kalman_benchmark_upstream main.cpp)
@@ -53,7 +66,8 @@ if(KALMAN_BENCHMARK_UPSTREAM_DIR)
     target_include_directories(
       kalman_benchmark_upstream PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}                       # lib/Benchmark.hpp
-        ${_upstream_root}/examples/Robot1                 # SystemModel.hpp etc.
+        ${_upstream_root}/examples/Robot1                 # upstream Robot1 models
+        ${CMAKE_CURRENT_BINARY_DIR}/upstream_shims        # .hpp -> .h shims
         ${KALMAN_BENCHMARK_UPSTREAM_DIR})                 # <kalman/...> headers
 
     target_link_libraries(kalman_benchmark_upstream PRIVATE Eigen3::Eigen)
