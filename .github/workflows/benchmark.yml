@@ -26,17 +26,12 @@ jobs:
       - name: Clone upstream mherb/kalman
         id: clone_upstream
         continue-on-error: true
-        # Clone into a directory named "kalman" so that #include <kalman/...>
-        # resolves correctly when the parent directory is on the include path.
-        # mherb/kalman uses .h extensions but its Robot1 examples include .hpp,
-        # so copy each .h to a matching .hpp alias right after cloning.
+        # Clone into a directory named "kalman" so that its headers (under
+        # include/kalman/) are found via -I<upstream>/kalman/include.
         run: |
           mkdir -p ${{ github.workspace }}/upstream
           git clone --depth=1 https://github.com/mherb/kalman.git \
             ${{ github.workspace }}/upstream/kalman
-          for h in "${{ github.workspace }}/upstream/kalman"/*.h; do
-            [ -f "$h" ] && cp "$h" "${h%.h}.hpp"
-          done
 
       - name: Configure
         run: |
