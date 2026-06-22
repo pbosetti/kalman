@@ -23,9 +23,9 @@ TEST(UnscentedKalmanFilterBase, init) {
   auto ukf = ConcreteUKF<Vector<T, 3>>(1, 2, 1);
 
   // x should be zero
-  ASSERT_FLOAT_EQ(0, ukf._x[0]);
-  ASSERT_FLOAT_EQ(0, ukf._x[1]);
-  ASSERT_FLOAT_EQ(0, ukf._x[2]);
+  ASSERT_FLOAT_EQ(0, ukf.x[0]);
+  ASSERT_FLOAT_EQ(0, ukf.x[1]);
+  ASSERT_FLOAT_EQ(0, ukf.x[2]);
 }
 
 TEST(UnscentedKalmanFilterBase, computeSigmaWeights) {

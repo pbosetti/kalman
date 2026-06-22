@@ -70,9 +70,9 @@ protected:
 
 protected:
   //! State estimate
-  using KalmanBase::_x;
+  using KalmanBase::x;
   //! State covariance square root
-  using SquareRootBase::_S;
+  using SquareRootBase::S;
 
 public:
   /**
@@ -80,7 +80,7 @@ public:
    */
   SquareRootExtendedKalmanFilter() {
     // Setup covariance
-    _S.setIdentity();
+    S.setIdentity();
   }
 
   /**
@@ -109,14 +109,14 @@ public:
   template <class Control, template <class> class CovarianceBase>
   const State &predict(SystemModelType<Control, CovarianceBase> &s,
                        const Control &u) {
-    s.update_jacobians(_x, u);
+    s.update_jacobians(x, u);
 
     // predict state
-    _x = s.f(_x, u);
+    x = s.f(x, u);
 
     // predict covariance
     compute_predicted_covariance_square_root<State>(
-        s._F, _S, s._W, s.get_covariance_square_root(), _S);
+        s.F, S, s.W, s.get_covariance_square_root(), S);
 
     // return state prediction
     return this->get_state();
@@ -133,21 +133,21 @@ public:
   template <class Measurement, template <class> class CovarianceBase>
   const State &update(MeasurementModelType<Measurement, CovarianceBase> &m,
                       const Measurement &z) {
-    m.update_jacobians(_x);
+    m.update_jacobians(x);
 
     // COMPUTE KALMAN GAIN
     // compute innovation covariance
     CovarianceSquareRoot<Measurement> S_y;
     compute_predicted_covariance_square_root<Measurement>(
-        m._H, _S, m._V, m.get_covariance_square_root(), S_y);
+        m.H, S, m.V, m.get_covariance_square_root(), S_y);
 
     // compute kalman gain
     KalmanGain<Measurement> K;
-    compute_kalman_gain<Measurement>(m._H, S_y, K);
+    compute_kalman_gain<Measurement>(m.H, S_y, K);
 
     // UPDATE STATE ESTIMATE AND COVARIANCE
     // Update state using computed kalman gain and innovation
-    _x += K * (z - m.h(_x));
+    x += K * (z - m.h(x));
 
     // Update covariance
     update_state_covariance<Measurement>(K, S_y);
@@ -279,7 +279,7 @@ protected:
                            KalmanGain<Measurement> &K) {
     // Solve using backsubstitution
     // AX=B with B = HSS^T and X = K^T and A = S_yS_y^T
-    K = S_y.solve(H * _S.reconstructedMatrix()).transpose();
+    K = S_y.solve(H * S.reconstructedMatrix()).transpose();
     return true;
   }
 
@@ -308,8 +308,8 @@ protected:
                                const CovarianceSquareRoot<Measurement> &S_y) {
     KalmanGain<Measurement> U = K * S_y.matrixL();
     for (int i = 0; i < U.cols(); ++i) {
-      _S.rankUpdate(U.col(i), T(-1));
-      if (_S.info() == Eigen::NumericalIssue) {
+      S.rankUpdate(U.col(i), T(-1));
+      if (S.info() == Eigen::NumericalIssue) {
         return false;
       }
     }

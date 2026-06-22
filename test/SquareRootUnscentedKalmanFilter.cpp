@@ -11,11 +11,11 @@ typedef float T;
 
 TEST(SquareRootUnscentedKalmanFilter, init) {
   auto ukf = SquareRootUnscentedKalmanFilter<Vector<T, 3>>(1, 2, 1);
-  ASSERT_TRUE(ukf._S.isIdentity()); // S should be identity
+  ASSERT_TRUE(ukf.S.isIdentity()); // S should be identity
 
   // Same as above, but with general matrix type instead of vector
   auto ukfMatrix = SquareRootUnscentedKalmanFilter<Matrix<T, 3, 1>>(1, 2, 1);
-  ASSERT_TRUE(ukfMatrix._S.isIdentity()); // S should be identity
+  ASSERT_TRUE(ukfMatrix.S.isIdentity()); // S should be identity
 }
 
 TEST(SquareRootUnscentedKalmanFilter, compute_sigma_points) {
@@ -25,8 +25,8 @@ TEST(SquareRootUnscentedKalmanFilter, compute_sigma_points) {
 
   // Init variables
   ukf._gamma = 2;
-  ukf._x << 1.f, 2.f, 3.f;
-  ukf._S.setIdentity();
+  ukf.x << 1.f, 2.f, 3.f;
+  ukf.S.setIdentity();
 
   ukf.compute_sigma_points();
 
@@ -111,7 +111,7 @@ TEST(SquareRootUnscentedKalmanFilter, compute_kalman_gain) {
   ASSERT_TRUE(S.info() == Eigen::Success);
 
   // x and _sigma_state_points
-  ukf._x << 3, 5, 7;
+  ukf.x << 3, 5, 7;
   ukf._sigma_state_points << 3, 5, 3, 3, 1, 3, 3, 5, 7, 7, 5, 3, 3, 5, 7, 11, 9,
       9, 3, 5, 5;
 
@@ -149,17 +149,17 @@ TEST(SquareRootUnscentedKalmanFilter, update_state_covariance) {
       0.802838317283324, -1.246156445345498, 0.063524243960128;
 
   // Setup S
-  ukf._S.setIdentity();
+  ukf.S.setIdentity();
 
   // Setup reference value for S (computed from regular UKF formula)
-  Matrix<T, 3, 3> P_ref = ukf._S.reconstructedMatrix() -
+  Matrix<T, 3, 3> P_ref = ukf.S.reconstructedMatrix() -
                           K * S_y.reconstructedMatrix() * K.transpose();
 
   // Perform update
   bool success = ukf.update_state_covariance<Vector<T, 2>>(K, S_y);
   ASSERT_TRUE(success);
 
-  Matrix<T, 3, 3> P = ukf._S.reconstructedMatrix();
+  Matrix<T, 3, 3> P = ukf.S.reconstructedMatrix();
 
   ASSERT_MATRIX_NEAR(P_ref, P, 1e-6);
 }

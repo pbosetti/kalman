@@ -44,19 +44,19 @@ public:
 
 protected:
   //! Estimated state
-  State _x;
+  State x;
 
 public:
   /**
    * Get current state estimate
    */
-  [[nodiscard]] const State &get_state() const { return _x; }
+  [[nodiscard]] const State &get_state() const { return x; }
 
   /**
    * @brief Initialize state
    * @param initial_state The initial state of the system
    */
-  void init(const State &initial_state) { _x = initial_state; }
+  void init(const State &initial_state) { x = initial_state; }
 
 protected:
   /**

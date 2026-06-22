@@ -73,7 +73,7 @@ public:
 
     // Setup noise jacobian. As this one is static, we can define it once
     // and do not need to update it dynamically
-    this->_V.setIdentity();
+    this->V.setIdentity();
   }
 
   /**
@@ -132,7 +132,7 @@ protected:
    */
   void update_jacobians(const S &x) {
     // H = dh/dx (Jacobian of measurement function w.r.t. the state)
-    this->_H.setZero();
+    this->H.setZero();
 
     // Robot position as (x,y)-vector
     // This uses the Eigen template method to get the first 2 elements of the
@@ -150,14 +150,14 @@ protected:
     T d2 = std::sqrt(delta2.dot(delta2));
 
     // partial derivative of meas.d1() w.r.t. x.x()
-    this->_H(M::D1, S::X) = delta1[0] / d1;
+    this->H(M::D1, S::X) = delta1[0] / d1;
     // partial derivative of meas.d1() w.r.t. x.y()
-    this->_H(M::D1, S::Y) = delta1[1] / d1;
+    this->H(M::D1, S::Y) = delta1[1] / d1;
 
     // partial derivative of meas.d1() w.r.t. x.x()
-    this->_H(M::D2, S::X) = delta2[0] / d2;
+    this->H(M::D2, S::X) = delta2[0] / d2;
     // partial derivative of meas.d1() w.r.t. x.y()
-    this->_H(M::D2, S::Y) = delta2[1] / d2;
+    this->H(M::D2, S::Y) = delta2[1] / d2;
   }
 };
 

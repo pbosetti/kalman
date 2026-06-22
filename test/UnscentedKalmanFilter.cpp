@@ -11,11 +11,11 @@ typedef float T;
 
 TEST(UnscentedKalmanFilter, init) {
   auto ukf = UnscentedKalmanFilter<Vector<T, 3>>(1, 2, 1);
-  ASSERT_TRUE(ukf._P.isIdentity()); // P should be identity
+  ASSERT_TRUE(ukf.P.isIdentity()); // P should be identity
 
   // Same as above, but with general matrix type instead of vector
   auto ukfMatrix = UnscentedKalmanFilter<Matrix<T, 3, 1>>(1, 2, 1);
-  ASSERT_TRUE(ukfMatrix._P.isIdentity()); // P should be identity
+  ASSERT_TRUE(ukfMatrix.P.isIdentity()); // P should be identity
 }
 
 TEST(UnscentedKalmanFilter, compute_sigma_points) {
@@ -25,8 +25,8 @@ TEST(UnscentedKalmanFilter, compute_sigma_points) {
 
   // Init variables
   ukf._gamma = 2;
-  ukf._x << 1.f, 2.f, 3.f;
-  ukf._P.setIdentity();
+  ukf.x << 1.f, 2.f, 3.f;
+  ukf.P.setIdentity();
 
   ASSERT_TRUE(ukf.compute_sigma_points());
 
@@ -92,7 +92,7 @@ TEST(UnscentedKalmanFilter, compute_kalman_gain) {
   P_yy << 35, 34, 34, 46;
 
   // x and _sigma_state_points
-  ukf._x << 3, 5, 7;
+  ukf.x << 3, 5, 7;
   ukf._sigma_state_points << 3, 5, 3, 3, 1, 3, 3, 5, 7, 7, 5, 3, 3, 5, 7, 11, 9,
       9, 3, 5, 5;
 
@@ -127,7 +127,7 @@ TEST(UnscentedKalmanFilter, update_state_covariance) {
       0.802838317283324, -1.246156445345498, 0.063524243960128;
 
   // Setup P
-  ukf._P.setIdentity();
+  ukf.P.setIdentity();
 
   // Setup P_ref
   Matrix<T, 3, 3> P_ref;
@@ -139,5 +139,5 @@ TEST(UnscentedKalmanFilter, update_state_covariance) {
   bool success = ukf.update_state_covariance<Vector<T, 2>>(K, P_yy);
   ASSERT_TRUE(success);
 
-  ASSERT_MATRIX_NEAR(P_ref, ukf._P, 1e-6);
+  ASSERT_MATRIX_NEAR(P_ref, ukf.P, 1e-6);
 }

@@ -133,23 +133,23 @@ protected:
    */
   void update_jacobians(const S &x, const C &u) {
     // F = df/dx (Jacobian of state transition w.r.t. the state)
-    this->_F.setZero();
+    this->F.setZero();
 
     // partial derivative of x.x() w.r.t. x.x()
-    this->_F(S::X, S::X) = 1;
+    this->F(S::X, S::X) = 1;
     // partial derivative of x.x() w.r.t. x.theta()
-    this->_F(S::X, S::THETA) = -std::sin(x.theta() + u.dtheta()) * u.v();
+    this->F(S::X, S::THETA) = -std::sin(x.theta() + u.dtheta()) * u.v();
 
     // partial derivative of x.y() w.r.t. x.y()
-    this->_F(S::Y, S::Y) = 1;
+    this->F(S::Y, S::Y) = 1;
     // partial derivative of x.y() w.r.t. x.theta()
-    this->_F(S::Y, S::THETA) = std::cos(x.theta() + u.dtheta()) * u.v();
+    this->F(S::Y, S::THETA) = std::cos(x.theta() + u.dtheta()) * u.v();
 
     // partial derivative of x.theta() w.r.t. x.theta()
-    this->_F(S::THETA, S::THETA) = 1;
+    this->F(S::THETA, S::THETA) = 1;
 
     // W = df/dw (Jacobian of state transition w.r.t. the noise)
-    this->_W.setIdentity();
+    this->W.setIdentity();
     // TODO: more sophisticated noise modelling
     //       i.e. The noise affects the the direction in which we move as
     //       well as the velocity (i.e. the distance we move)

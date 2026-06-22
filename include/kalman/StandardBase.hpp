@@ -35,14 +35,14 @@ namespace Kalman {
 template <class StateType> class StandardBase {
 protected:
   //! Covariance
-  Covariance<StateType> _P;
+  Covariance<StateType> P;
 
 public:
   /**
    * Get covariance
    */
   [[nodiscard]] const Covariance<StateType> &get_covariance() const {
-    return _P;
+    return P;
   }
 
   /**
@@ -50,14 +50,14 @@ public:
    */
   [[nodiscard]] CovarianceSquareRoot<StateType>
   get_covariance_square_root() const {
-    return CovarianceSquareRoot<StateType>(_P);
+    return CovarianceSquareRoot<StateType>(P);
   }
 
   /**
    * Set Covariance
    */
   bool set_covariance(const Covariance<StateType> &covariance) {
-    _P = covariance;
+    P = covariance;
     return true;
   }
 
@@ -71,12 +71,12 @@ public:
   set_covariance_square_root(const Covariance<StateType> &cov_square_root) {
     CovarianceSquareRoot<StateType> s;
     s.setL(cov_square_root);
-    _P = s.reconstructedMatrix();
+    P = s.reconstructedMatrix();
     return true;
   }
 
 protected:
-  StandardBase() { _P.setIdentity(); }
+  StandardBase() { P.setIdentity(); }
 };
 } // namespace Kalman
 

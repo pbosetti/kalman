@@ -78,7 +78,7 @@ protected:
   // Member variables
 
   //! State Estimate
-  using Base::_x;
+  using Base::x;
 
   //! Sigma weights (m)
   SigmaWeights _sigma_weights_m;
@@ -117,7 +117,7 @@ protected:
     compute_weights();
 
     // Setup state and covariance
-    _x.setZero();
+    x.setZero();
   }
 
   /**

@@ -70,9 +70,9 @@ protected:
 
 protected:
   //! State Estimate
-  using KalmanBase::_x;
+  using KalmanBase::x;
   //! State Covariance Matrix
-  using StandardBase::_P;
+  using StandardBase::P;
 
 public:
   /**
@@ -80,7 +80,7 @@ public:
    */
   ExtendedKalmanFilter() {
     // Setup state and covariance
-    _P.setIdentity();
+    P.setIdentity();
   }
 
   /**
@@ -109,14 +109,14 @@ public:
   template <class Control, template <class> class CovarianceBase>
   const State &predict(SystemModelType<Control, CovarianceBase> &s,
                        const Control &u) {
-    s.update_jacobians(_x, u);
+    s.update_jacobians(x, u);
 
     // predict state
-    _x = s.f(_x, u);
+    x = s.f(x, u);
 
     // predict covariance
-    _P = (s._F * _P * s._F.transpose()) +
-         (s._W * s.get_covariance() * s._W.transpose());
+    P = (s.F * P * s.F.transpose()) +
+        (s.W * s.get_covariance() * s.W.transpose());
 
     // return state prediction
     return this->get_state();
@@ -133,12 +133,12 @@ public:
   template <class Measurement, template <class> class CovarianceBase>
   const State &update(MeasurementModelType<Measurement, CovarianceBase> &m,
                       const Measurement &z) {
-    m.update_jacobians(_x);
+    m.update_jacobians(x);
 
     // COMPUTE KALMAN GAIN
     // compute innovation covariance
-    Covariance<Measurement> S = (m._H * _P * m._H.transpose()) +
-                                (m._V * m.get_covariance() * m._V.transpose());
+    Covariance<Measurement> S = (m.H * P * m.H.transpose()) +
+                                (m.V * m.get_covariance() * m.V.transpose());
 
     // compute kalman gain: K = P H^T S^{-1}
     // For small fixed-size measurement spaces Eigen's closed-form inverse is
@@ -146,18 +146,18 @@ public:
     KalmanGain<Measurement> K;
     if constexpr (Measurement::RowsAtCompileTime != Eigen::Dynamic &&
                   Measurement::RowsAtCompileTime <= 4) {
-      K = _P * m._H.transpose() * S.inverse();
+      K = P * m.H.transpose() * S.inverse();
     } else {
-      K = S.llt().solve(m._H * _P).transpose();
+      K = S.llt().solve(m.H * P).transpose();
     }
 
     // UPDATE STATE ESTIMATE AND COVARIANCE
     // Update state using computed kalman gain and innovation
-    _x += K * (z - m.h(_x));
+    x += K * (z - m.h(x));
 
-    // Update covariance — eval() prevents aliasing since _P appears on both
+    // Update covariance — eval() prevents aliasing since P appears on both
     // sides of the compound assignment.
-    _P -= (K * m._H * _P).eval();
+    P -= (K * m.H * P).eval();
 
     // return updated state estimate
     return this->get_state();

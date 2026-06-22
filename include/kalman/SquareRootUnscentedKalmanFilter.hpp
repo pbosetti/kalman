@@ -85,10 +85,10 @@ protected:
   // Member variables
 
   //! State Estimate
-  using UnscentedBase::_x;
+  using UnscentedBase::x;
 
   //! Square Root of State Covariance
-  using SquareRootBase::_S;
+  using SquareRootBase::S;
 
   //! Sigma points (state)
   using UnscentedBase::_sigma_state_points;
@@ -108,7 +108,7 @@ public:
   SquareRootUnscentedKalmanFilter(T alpha = T(1), T beta = T(2), T kappa = T(0))
       : UnscentedKalmanFilterBase<StateType>(alpha, beta, kappa) {
     // Init covariance to identity
-    _S.setIdentity();
+    S.setIdentity();
   }
 
   /**
@@ -141,11 +141,11 @@ public:
     compute_sigma_points();
 
     // Compute predicted state
-    _x = this->template compute_state_prediction<Control, CovarianceBase>(s, u);
+    x = this->template compute_state_prediction<Control, CovarianceBase>(s, u);
 
     // Compute predicted covariance
     if (!compute_covariance_square_root_from_sigma_points(
-            _x, _sigma_state_points, s.get_covariance_square_root(), _S)) {
+            x, _sigma_state_points, s.get_covariance_square_root(), S)) {
       // TODO: handle numerical error
       assert(false);
     }
@@ -184,7 +184,7 @@ public:
     compute_kalman_gain(y, sigma_measurement_points, S_y, K);
 
     // Update state
-    _x += K * (z - y);
+    x += K * (z - y);
 
     // Update state covariance
     if (!update_state_covariance<Measurement>(K, S_y)) {
@@ -204,18 +204,18 @@ protected:
    */
   bool compute_sigma_points() {
     // Get square root of covariance
-    Matrix<T, State::RowsAtCompileTime, State::RowsAtCompileTime> S =
-        _S.matrixL().toDenseMatrix();
+    Matrix<T, State::RowsAtCompileTime, State::RowsAtCompileTime> S_l =
+        S.matrixL().toDenseMatrix();
 
     // Set left "block" (first column)
-    _sigma_state_points.template leftCols<1>() = _x;
-    // Set center block with x + gamma * S
+    _sigma_state_points.template leftCols<1>() = x;
+    // Set center block with x + gamma * S_l
     _sigma_state_points
         .template block<State::RowsAtCompileTime, State::RowsAtCompileTime>(
-            0, 1) = (this->_gamma * S).colwise() + _x;
-    // Set right block with x - gamma * S
+            0, 1) = (this->_gamma * S_l).colwise() + x;
+    // Set right block with x - gamma * S_l
     _sigma_state_points.template rightCols<State::RowsAtCompileTime>() =
-        (-this->_gamma * S).colwise() + _x;
+        (-this->_gamma * S_l).colwise() + x;
 
     return true;
   }
@@ -306,7 +306,7 @@ protected:
                       const CovarianceSquareRoot<Measurement> &S_y,
                       KalmanGain<Measurement> &K) {
     Matrix<T, State::RowsAtCompileTime, Measurement::RowsAtCompileTime> P =
-        (_sigma_state_points.colwise() - _x) *
+        (_sigma_state_points.colwise() - x) *
         this->_sigma_weights_c.asDiagonal() *
         (sigma_measurement_points.colwise() - y).transpose();
 
@@ -330,9 +330,9 @@ protected:
                                const CovarianceSquareRoot<Measurement> &S_y) {
     KalmanGain<Measurement> U = K * S_y.matrixL();
     for (int i = 0; i < U.cols(); ++i) {
-      _S.rankUpdate(U.col(i), -1);
+      S.rankUpdate(U.col(i), -1);
 
-      if (_S.info() == Eigen::NumericalIssue) {
+      if (S.info() == Eigen::NumericalIssue) {
         // TODO: handle numerical issues in some sensible way
         return false;
       }

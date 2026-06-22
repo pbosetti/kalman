@@ -20,5 +20,5 @@ TEST(StandardBase, set_covariance_square_root) {
   StandardBase<Vec3f> S;
   S.set_covariance_square_root(sqrRoot);
 
-  ASSERT_MATRIX_NEAR(cov, S._P, 1e-5);
+  ASSERT_MATRIX_NEAR(cov, S.P, 1e-5);
 }

@@ -52,7 +52,7 @@ using State = Kalman::Vector<T, 2>;
 class SystemModel : public Kalman::LinearizedSystemModel<State> {
 public:
   explicit SystemModel(T dt = T(1)) : _dt(dt) {
-    this->_F << T(1), dt, T(0), T(1);
+    this->F << T(1), dt, T(0), T(1);
   }
 
   State f(const State &x, const Control & /*u*/) const override {
@@ -73,7 +73,7 @@ using Measurement = Kalman::Vector<T, 1>;
 class MeasurementModel
     : public Kalman::LinearizedMeasurementModel<State, Measurement> {
 public:
-  MeasurementModel() { this->_H << T(1), T(0); }
+  MeasurementModel() { this->H << T(1), T(0); }
 
   Measurement h(const State &x) const override {
     Measurement z;

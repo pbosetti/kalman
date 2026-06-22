@@ -52,8 +52,8 @@ public:
   OrientationMeasurementModel() {
     // Setup jacobians. As these are static, we can define them once
     // and do not need to update them dynamically
-    this->_H.setIdentity();
-    this->_V.setIdentity();
+    this->H.setIdentity();
+    this->V.setIdentity();
   }
 
   /**

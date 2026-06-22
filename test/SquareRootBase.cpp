@@ -17,5 +17,5 @@ TEST(SquareRootBase, set_covariance) {
   SquareRootBase<Vec3f> S;
   S.set_covariance(cov);
 
-  ASSERT_MATRIX_NEAR(cov, S._S.reconstructedMatrix(), 1e-5);
+  ASSERT_MATRIX_NEAR(cov, S.S.reconstructedMatrix(), 1e-5);
 }

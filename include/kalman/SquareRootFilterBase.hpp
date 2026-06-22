@@ -39,7 +39,7 @@ protected:
   using Base = SquareRootBase<StateType>;
 
   //! Covariance Square Root
-  using Base::_S;
+  using Base::S;
 };
 } // namespace Kalman
 

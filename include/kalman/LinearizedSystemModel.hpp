@@ -59,9 +59,9 @@ public:
 
 protected:
   //! System model jacobian
-  Jacobian<State, State> _F;
+  Jacobian<State, State> F;
   //! System model noise jacobian
-  Jacobian<State, State> _W;
+  Jacobian<State, State> W;
 
   /**
    * Callback function for state-dependent update of Jacobi-matrices F and W
@@ -74,8 +74,8 @@ protected:
 
 protected:
   LinearizedSystemModel() {
-    _F.setIdentity();
-    _W.setIdentity();
+    F.setIdentity();
+    W.setIdentity();
   }
   ~LinearizedSystemModel() = default;
 };

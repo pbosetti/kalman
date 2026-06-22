@@ -35,7 +35,7 @@ namespace Kalman {
 template <class StateType> class SquareRootBase {
 protected:
   //! Covariance Square Root
-  CovarianceSquareRoot<StateType> _S;
+  CovarianceSquareRoot<StateType> S;
 
 public:
   /**
@@ -43,22 +43,22 @@ public:
    */
   [[nodiscard]] const CovarianceSquareRoot<StateType> &
   get_covariance_square_root() const {
-    return _S;
+    return S;
   }
 
   /**
    * Get covariance reconstructed from square root
    */
   [[nodiscard]] Covariance<StateType> get_covariance() const {
-    return _S.reconstructedMatrix();
+    return S.reconstructedMatrix();
   }
 
   /**
    * Set Covariance
    */
   bool set_covariance(const Covariance<StateType> &covariance) {
-    _S.compute(covariance);
-    return (_S.info() == Eigen::Success);
+    S.compute(covariance);
+    return (S.info() == Eigen::Success);
   }
 
   /**
@@ -69,12 +69,12 @@ public:
    */
   bool
   set_covariance_square_root(const Covariance<StateType> &cov_square_root) {
-    _S.setL(cov_square_root);
+    S.setL(cov_square_root);
     return true;
   }
 
 protected:
-  SquareRootBase() { _S.setIdentity(); }
+  SquareRootBase() { S.setIdentity(); }
 };
 } // namespace Kalman
 

@@ -58,9 +58,9 @@ public:
 
 protected:
   //! Measurement model jacobian
-  Jacobian<Measurement, State> _H;
+  Jacobian<Measurement, State> H;
   //! Measurement model noise jacobian
-  Jacobian<Measurement, Measurement> _V;
+  Jacobian<Measurement, Measurement> V;
 
   /**
    * Callback function for state-dependent update of Jacobi-matrices H and V
@@ -72,8 +72,8 @@ protected:
 
 protected:
   LinearizedMeasurementModel() {
-    _H.setIdentity();
-    _V.setIdentity();
+    H.setIdentity();
+    V.setIdentity();
   }
   ~LinearizedMeasurementModel() = default;
 };

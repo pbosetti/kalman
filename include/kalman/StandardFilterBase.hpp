@@ -39,7 +39,7 @@ protected:
   using Base = StandardBase<StateType>;
 
   //! Covariance matrix
-  using Base::_P;
+  using Base::P;
 };
 } // namespace Kalman
 
