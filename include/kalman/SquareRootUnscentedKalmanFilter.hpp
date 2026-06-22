@@ -305,14 +305,9 @@ protected:
                       const SigmaPoints<Measurement> &sigma_measurement_points,
                       const CovarianceSquareRoot<Measurement> &S_y,
                       KalmanGain<Measurement> &K) {
-    // Note: The intermediate eval() is needed here (for now) due to a bug in
-    // Eigen that occurs when Measurement::RowsAtCompileTime == 1 AND
-    // State::RowsAtCompileTime >= 8
-    decltype(_sigma_state_points) W =
-        this->_sigma_weights_c.transpose()
-            .template replicate<State::RowsAtCompileTime, 1>();
     Matrix<T, State::RowsAtCompileTime, Measurement::RowsAtCompileTime> P =
-        (_sigma_state_points.colwise() - _x).cwiseProduct(W).eval() *
+        (_sigma_state_points.colwise() - _x) *
+        this->_sigma_weights_c.asDiagonal() *
         (sigma_measurement_points.colwise() - y).transpose();
 
     K = S_y.solve(P.transpose()).transpose();

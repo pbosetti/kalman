@@ -14,6 +14,9 @@ documentation
 __pycache__/
 *.pyc
 
+# Benchmark output files
+*.csv
+
 # R package build artifacts (RcppExports are generated at build time)
 bindings/r/kalmanr/src/RcppExports.cpp
 bindings/r/kalmanr/R/RcppExports.R

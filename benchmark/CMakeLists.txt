@@ -47,14 +47,16 @@ if(KALMAN_BENCHMARK_UPSTREAM_DIR)
       "contain a 'kalman/' sub-directory. Clone mherb/kalman into that sub-directory.")
   else()
     # Reuse the same main.cpp but point at upstream Robot1 models and headers.
+    # mherb/kalman places its headers under include/kalman/, so that subdirectory
+    # must be on the include path for <kalman/Foo.hpp> to resolve correctly.
     # Eigen is already available from the outer project.
     add_executable(kalman_benchmark_upstream main.cpp)
 
     target_include_directories(
       kalman_benchmark_upstream PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}                       # lib/Benchmark.hpp
-        ${_upstream_root}/examples/Robot1                 # SystemModel.hpp etc.
-        ${KALMAN_BENCHMARK_UPSTREAM_DIR})                 # <kalman/...> headers
+        ${_upstream_root}/examples/Robot1                 # upstream Robot1 models
+        ${_upstream_root}/include)                        # <kalman/...> headers
 
     target_link_libraries(kalman_benchmark_upstream PRIVATE Eigen3::Eigen)
 
