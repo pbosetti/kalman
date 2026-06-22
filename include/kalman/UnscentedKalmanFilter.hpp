@@ -263,9 +263,15 @@ protected:
         this->_sigma_weights_c.asDiagonal() *
         (sigma_measurement_points.colwise() - y).transpose();
 
-    // K = P_xy * P_yy^{-1}; solved as K^T = P_yy^{-1} * P_xy^T via Cholesky
-    // to avoid the O(n^3) explicit inverse and improve numerical stability.
-    K = P_yy.llt().solve(P_xy.transpose()).transpose();
+    // K = P_xy * P_yy^{-1}
+    // For small fixed-size measurement spaces Eigen's closed-form inverse is
+    // faster; for large or dynamic sizes LLT solve is more stable and faster.
+    if constexpr (Measurement::RowsAtCompileTime != Eigen::Dynamic &&
+                  Measurement::RowsAtCompileTime <= 4) {
+      K = P_xy * P_yy.inverse();
+    } else {
+      K = P_yy.llt().solve(P_xy.transpose()).transpose();
+    }
     return true;
   }
 

@@ -141,9 +141,15 @@ public:
                                 (m._V * m.get_covariance() * m._V.transpose());
 
     // compute kalman gain: K = P H^T S^{-1}
-    // Rearranged as K^T = S^{-1} H P (S symmetric) and solved via Cholesky
-    // to avoid the O(n^3) explicit inverse and improve numerical stability.
-    KalmanGain<Measurement> K = S.llt().solve(m._H * _P).transpose();
+    // For small fixed-size measurement spaces Eigen's closed-form inverse is
+    // faster; for large or dynamic sizes LLT solve is more stable and faster.
+    KalmanGain<Measurement> K;
+    if constexpr (Measurement::RowsAtCompileTime != Eigen::Dynamic &&
+                  Measurement::RowsAtCompileTime <= 4) {
+      K = _P * m._H.transpose() * S.inverse();
+    } else {
+      K = S.llt().solve(m._H * _P).transpose();
+    }
 
     // UPDATE STATE ESTIMATE AND COVARIANCE
     // Update state using computed kalman gain and innovation
